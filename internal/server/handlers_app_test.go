@@ -534,15 +534,26 @@ func TestHandleDeleteApp_NotPinned(t *testing.T) {
 	}
 }
 
-func TestHandleDeleteApp_ClearsNightModeApp(t *testing.T) {
+func TestHandleDeleteApp_ClearsQuietHoursApp(t *testing.T) {
 	s := newTestServer(t)
 
+	iname := "app1"
 	user := data.User{Username: "testuser"}
 	s.DB.Create(&user)
-	device := data.Device{ID: "testdevice", Username: "testuser", NightModeApp: "app1"}
+	device := data.Device{
+		ID:       "testdevice",
+		Username: "testuser",
+		QuietHours: data.QuietHoursConfig{Windows: []data.QuietWindow{{
+			Enabled:   true,
+			StartHour: 22,
+			EndHour:   6,
+			Days:      0x7F,
+			Mode:      data.QuietModeApp,
+			AppIname:  iname,
+		}}},
+	}
 	s.DB.Create(&device)
 
-	iname := "app1"
 	app := data.App{
 		DeviceID: "testdevice",
 		Iname:    iname,
@@ -551,11 +562,11 @@ func TestHandleDeleteApp_ClearsNightModeApp(t *testing.T) {
 	}
 	s.DB.Create(&app)
 
-	// Verify NightModeApp is set
+	// Verify the quiet window references the app
 	var dev data.Device
 	s.DB.First(&dev, "id = ?", "testdevice")
-	if dev.NightModeApp != iname {
-		t.Fatalf("Setup failed: NightModeApp should be set to %s, got %s", iname, dev.NightModeApp)
+	if len(dev.QuietHours.Windows) != 1 || dev.QuietHours.Windows[0].AppIname != iname {
+		t.Fatalf("Setup failed: quiet window AppIname should be %s", iname)
 	}
 
 	// Create request
@@ -575,10 +586,10 @@ func TestHandleDeleteApp_ClearsNightModeApp(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", rr.Code, http.StatusOK)
 	}
 
-	// Verify NightModeApp is cleared
+	// Verify the quiet window's AppIname is cleared
 	s.DB.First(&dev, "id = ?", "testdevice")
-	if dev.NightModeApp != "" {
-		t.Errorf("NightModeApp was not cleared, is: %v", dev.NightModeApp)
+	if len(dev.QuietHours.Windows) != 1 || dev.QuietHours.Windows[0].AppIname != "" {
+		t.Errorf("quiet window AppIname was not cleared, is: %v", dev.QuietHours.Windows)
 	}
 }
 

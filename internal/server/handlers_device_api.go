@@ -129,6 +129,11 @@ func (s *Server) handleNextApp(w http.ResponseWriter, r *http.Request) {
 	brightness := device.GetEffectiveBrightness()
 	w.Header().Set("Tronbyt-Brightness", fmt.Sprintf("%d", brightness))
 
+	// Signal an active "off" quiet window so the device can blank the panel.
+	if device.GetQuietOffIsActive(deviceTimeNow(device)) {
+		w.Header().Set("Tronbyt-Quiet", "1")
+	}
+
 	dwell := device.GetEffectiveDwellTime(app)
 	w.Header().Set("Tronbyt-Dwell-Secs", fmt.Sprintf("%d", dwell))
 

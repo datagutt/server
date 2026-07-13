@@ -827,9 +827,16 @@ func (s *Server) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		// Unset Night Mode App if it matches
-		if device.NightModeApp == app.Iname {
-			if _, err := gorm.G[data.Device](tx).Where("id = ?", device.ID).Update(r.Context(), "night_mode_app", ""); err != nil {
+		// Clear the app from any quiet-hours "app" window that references it
+		quietChanged := false
+		for i := range device.QuietHours.Windows {
+			if device.QuietHours.Windows[i].AppIname == app.Iname {
+				device.QuietHours.Windows[i].AppIname = ""
+				quietChanged = true
+			}
+		}
+		if quietChanged {
+			if _, err := gorm.G[data.Device](tx).Where("id = ?", device.ID).Update(r.Context(), "quiet_hours", device.QuietHours); err != nil {
 				return err
 			}
 		}

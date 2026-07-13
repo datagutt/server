@@ -52,13 +52,21 @@
         sendBrightnessToDevice(getBrightnessScaleValues()[brightness]);
     }
 
-    function setNightBrightnessUpdate(brightness) {
-        document.getElementById('night_brightness').value = brightness;
-        const buttons = document.querySelectorAll('#night-brightness-panel .brightness-btn');
-        buttons.forEach(btn => {
-            btn.classList.toggle('active', parseInt(btn.dataset.brightness) === parseInt(brightness));
-        });
+    // Show only the extra field the selected quiet-hours mode needs: brightness
+    // for "dim", an app picker for "app", and nothing extra for "off".
+    function updateQuietWindowMode(index) {
+        const mode = document.getElementById('qh_mode_' + index).value;
+        const brightnessRow = document.getElementById('qh-brightness-row-' + index);
+        const appRow = document.getElementById('qh-app-row-' + index);
+        if (brightnessRow) brightnessRow.style.display = (mode === 'dim') ? '' : 'none';
+        if (appRow) appRow.style.display = (mode === 'app') ? '' : 'none';
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('select[id^="qh_mode_"]').forEach(function (sel) {
+            updateQuietWindowMode(sel.id.replace('qh_mode_', ''));
+        });
+    });
 
     function setDimBrightnessUpdate(brightness) {
         document.getElementById('dim_brightness').value = brightness;
@@ -361,102 +369,106 @@
                 </div>
             </div>
             <div class="settings-card-subsection">
-                <h3>{{ t .Localizer "Night Mode" }}</h3>
+                <h3>{{ t .Localizer "Quiet Hours" }}</h3>
                 <p class="settings-help">
-                    {{ t .Localizer "Night mode switches the device into its nighttime state during the scheduled window. It can use a different brightness, color filter, and optional dedicated app." }}
+                    {{ t .Localizer "Quiet hours change what the device shows during scheduled windows. Each window can turn the display off, dim the brightness, or switch to a dedicated app on the days you choose. Up to four windows are supported." }}
                 </p>
-                <div class="settings-field-list">
+                {{ range $w := .QuietWindows }}
+                <div class="quiet-window settings-field-list">
+                    <h4 class="quiet-window-title">{{ t $.Localizer "Window" }} {{ add $w.Index 1 }}</h4>
                     <div class="settings-field-row">
                         <div class="settings-field-label">
-                            <label for="night_mode_enabled">{{ t .Localizer "Enable Night Mode" }}</label>
+                            <label for="qh_enabled_{{ $w.Index }}">{{ t $.Localizer "Enable Window" }}</label>
                         </div>
                         <div class="settings-field-control">
                             <input type="checkbox"
-                                   name="night_mode_enabled"
-                                   id="night_mode_enabled"
-                                   {{ if .Device.NightModeEnabled }}
-                                   checked
-                                   {{ end }}>
+                                   name="qh_enabled_{{ $w.Index }}"
+                                   id="qh_enabled_{{ $w.Index }}"
+                                   {{ if $w.Enabled }}checked{{ end }}>
                         </div>
                     </div>
                     <div class="settings-field-row">
                         <div class="settings-field-label">
-                            <label for="night_start">{{ t .Localizer "Night Start Time" }}</label>
+                            <label for="qh_start_{{ $w.Index }}">{{ t $.Localizer "Start Time" }}</label>
                         </div>
                         <div class="settings-field-control">
                             <input type="time"
-                                   name="night_start"
-                                   id="night_start"
-                                   value="{{ if .Device.NightStart }}{{ .Device.NightStart }}{{ else }}22:00{{ end }}"
+                                   name="qh_start_{{ $w.Index }}"
+                                   id="qh_start_{{ $w.Index }}"
+                                   value="{{ $w.Start }}"
                                    class="settings-input">
                         </div>
                     </div>
                     <div class="settings-field-row">
                         <div class="settings-field-label">
-                            <label for="night_end">{{ t .Localizer "Night End Time" }}</label>
+                            <label for="qh_end_{{ $w.Index }}">{{ t $.Localizer "End Time" }}</label>
                         </div>
                         <div class="settings-field-control">
                             <input type="time"
-                                   name="night_end"
-                                   id="night_end"
-                                   value="{{ if .Device.NightEnd }}{{ .Device.NightEnd }}{{ else }}06:00{{ end }}"
+                                   name="qh_end_{{ $w.Index }}"
+                                   id="qh_end_{{ $w.Index }}"
+                                   value="{{ $w.End }}"
                                    class="settings-input">
+                            <p class="settings-help">{{ t $.Localizer "An end time earlier than the start time wraps past midnight." }}</p>
                         </div>
                     </div>
                     <div class="settings-field-row">
-                        <div class="settings-field-label">{{ t .Localizer "Night Brightness" }}</div>
+                        <div class="settings-field-label">{{ t $.Localizer "Days" }}</div>
+                        <div class="settings-field-control quiet-days">
+                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_0" {{ if bitSet $w.Days 0 }}checked{{ end }}> {{ t $.Localizer "Sun" }}</label>
+                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_1" {{ if bitSet $w.Days 1 }}checked{{ end }}> {{ t $.Localizer "Mon" }}</label>
+                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_2" {{ if bitSet $w.Days 2 }}checked{{ end }}> {{ t $.Localizer "Tue" }}</label>
+                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_3" {{ if bitSet $w.Days 3 }}checked{{ end }}> {{ t $.Localizer "Wed" }}</label>
+                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_4" {{ if bitSet $w.Days 4 }}checked{{ end }}> {{ t $.Localizer "Thu" }}</label>
+                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_5" {{ if bitSet $w.Days 5 }}checked{{ end }}> {{ t $.Localizer "Fri" }}</label>
+                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_6" {{ if bitSet $w.Days 6 }}checked{{ end }}> {{ t $.Localizer "Sat" }}</label>
+                        </div>
+                    </div>
+                    <div class="settings-field-row">
+                        <div class="settings-field-label">
+                            <label for="qh_mode_{{ $w.Index }}">{{ t $.Localizer "Mode" }}</label>
+                        </div>
                         <div class="settings-field-control">
-                            <input type="hidden"
-                                   name="night_brightness"
-                                   id="night_brightness"
-                                   value="{{ .NightBrightnessUI }}">
-                            <div class="brightness-panel" id="night-brightness-panel">
+                            <select name="qh_mode_{{ $w.Index }}"
+                                    id="qh_mode_{{ $w.Index }}"
+                                    class="settings-input"
+                                    onchange="updateQuietWindowMode('{{ $w.Index }}')">
+                                <option value="off" {{ if eq $w.Mode "off" }}selected{{ end }}>{{ t $.Localizer "Turn display off" }}</option>
+                                <option value="dim" {{ if eq $w.Mode "dim" }}selected{{ end }}>{{ t $.Localizer "Dim brightness" }}</option>
+                                <option value="app" {{ if eq $w.Mode "app" }}selected{{ end }}>{{ t $.Localizer "Show a specific app" }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-field-row" id="qh-brightness-row-{{ $w.Index }}">
+                        <div class="settings-field-label">
+                            <label for="qh_brightness_{{ $w.Index }}">{{ t $.Localizer "Brightness" }}</label>
+                        </div>
+                        <div class="settings-field-control">
+                            <select name="qh_brightness_{{ $w.Index }}" id="qh_brightness_{{ $w.Index }}" class="settings-input">
                                 {{ range seq 0 5 }}
-                                <button type="button"
-                                        class="brightness-btn {{ if eq $.NightBrightnessUI . }}active{{ end }}"
-                                        data-brightness="{{ . }}"
-                                        onclick="setNightBrightnessUpdate({{ . }})">{{ . }}</button>
+                                <option value="{{ . }}" {{ if eq $w.BrightnessUI . }}selected{{ end }}>{{ . }}</option>
                                 {{ end }}
-                            </div>
+                            </select>
                         </div>
                     </div>
-                    <div class="settings-field-row">
+                    <div class="settings-field-row" id="qh-app-row-{{ $w.Index }}">
                         <div class="settings-field-label">
-                            <label for="night_mode_app">{{ t .Localizer "Night Mode App" }}</label>
+                            <label for="qh_app_{{ $w.Index }}">{{ t $.Localizer "App" }}</label>
                         </div>
                         <div class="settings-field-control">
-                            <select name="night_mode_app" id="night_mode_app" class="settings-input">
-                                <option value="None">{{ t .Localizer "None" }}</option>
-                                {{ range .Device.Apps }}
-                                <option value="{{ .Iname }}"
-                                        {{ if eq $.Device.NightModeApp .Iname }}
-                                        selected
-                                        {{ end }}>{{ .Iname }} {{ .Name }}</option>
+                            <select name="qh_app_{{ $w.Index }}" id="qh_app_{{ $w.Index }}" class="settings-input">
+                                <option value="None">{{ t $.Localizer "None" }}</option>
+                                {{ range $.Device.Apps }}
+                                <option value="{{ .Iname }}" {{ if eq $w.AppIname .Iname }}selected{{ end }}>{{ .Iname }} {{ .Name }}</option>
                                 {{ end }}
                             </select>
                             <p class="settings-help">
-                                {{ t .Localizer "To prevent the night mode app from displaying during the day, set it to disabled on the app edit page." }}
+                                {{ t $.Localizer "To keep this app hidden outside the quiet window, disable it in the regular rotation on its app edit page." }}
                             </p>
                         </div>
                     </div>
-                    <div class="settings-field-row">
-                        <div class="settings-field-label">
-                            <label for="night_color_filter">{{ t .Localizer "Night Color Filter" }}</label>
-                        </div>
-                        <div class="settings-field-control">
-                            <select name="night_color_filter"
-                                    id="night_color_filter"
-                                    class="settings-input">
-                                {{ range .ColorFilterOptions }}
-                                <option value="{{ .Value }}"
-                                        {{ if eq (derefOr $.Device.NightColorFilter "none") .Value }}
-                                        selected
-                                        {{ end }}>{{ t $.Localizer .Name }}</option>
-                                {{ end }}
-                            </select>
-                        </div>
-                    </div>
                 </div>
+                {{ end }}
             </div>
             <div class="settings-card-subsection">
                 <h3>{{ t .Localizer "Dim Mode" }}</h3>

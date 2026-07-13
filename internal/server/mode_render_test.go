@@ -21,14 +21,17 @@ func TestInvalidateDeviceAppRendersIfModeChanged(t *testing.T) {
 
 	warm := data.ColorFilterWarm
 	dimmed := data.ColorFilterDimmed
+	dimActive := true
+	dimUntil := time.Now().Add(time.Hour)
 	device := data.Device{
-		ID:               "moderender",
-		Username:         "testuser",
-		Name:             "Mode Render",
-		NightModeEnabled: true,
-		NightStart:       "00:00",
-		NightEnd:         "23:59",
-		NightColorFilter: &warm,
+		ID:                   "moderender",
+		Username:             "testuser",
+		Name:                 "Mode Render",
+		DimModeEnabled:       true,
+		DimTime:              new("22:00"),
+		DimColorFilter:       &warm,
+		DimModeOverride:      &dimActive,
+		DimModeOverrideUntil: &dimUntil,
 	}
 	require.NoError(t, s.DB.Create(&device).Error)
 
@@ -45,7 +48,7 @@ func TestInvalidateDeviceAppRendersIfModeChanged(t *testing.T) {
 	device.Apps = []*data.App{&app}
 
 	before := snapshotDeviceMode(&device)
-	device.NightColorFilter = &dimmed
+	device.DimColorFilter = &dimmed
 	s.invalidateDeviceAppRendersIfModeChanged(ctx, &device, before)
 
 	assert.True(t, app.LastRender.IsZero())
@@ -65,11 +68,10 @@ func TestFiltersChangedSinceLastRender(t *testing.T) {
 	warm := data.ColorFilterWarm
 	tz := "UTC"
 	device := data.Device{
-		NightModeEnabled: true,
-		NightStart:       "22:00",
-		NightEnd:         "06:00",
-		NightColorFilter: &dimmed,
-		Timezone:         &tz,
+		DimModeEnabled: true,
+		DimTime:        new("22:00"),
+		DimColorFilter: &dimmed,
+		Timezone:       &tz,
 	}
 	app := &data.App{
 		ColorFilter: &warm,

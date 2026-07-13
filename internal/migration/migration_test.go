@@ -15,6 +15,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -108,9 +109,17 @@ func TestMigrateLegacyDB(t *testing.T) {
 	assert.Equal(t, "e32753c8", adminDevice.ID)
 	assert.Equal(t, "PixoPrint", adminDevice.Name)
 	assert.Equal(t, data.Brightness(20), adminDevice.Brightness)
-	assert.Equal(t, "18:00", adminDevice.NightStart)
-	assert.Equal(t, "06:00", adminDevice.NightEnd)
-	assert.Equal(t, data.Brightness(12), adminDevice.NightBrightness)
+	// Legacy night mode collapses into a single quiet-hours window.
+	require.Len(t, adminDevice.QuietHours.Windows, 1)
+	qw := adminDevice.QuietHours.Windows[0]
+	assert.False(t, qw.Enabled)
+	assert.Equal(t, uint8(18), qw.StartHour)
+	assert.Equal(t, uint8(0), qw.StartMin)
+	assert.Equal(t, uint8(6), qw.EndHour)
+	assert.Equal(t, uint8(0), qw.EndMin)
+	assert.Equal(t, uint8(0x7F), qw.Days)
+	assert.Equal(t, data.QuietModeDim, qw.Mode)
+	assert.Equal(t, data.Brightness(12), qw.Brightness)
 
 	var adminApps []*data.App
 	err = newDB.Where("device_id = ?", adminDevice.ID).Find(&adminApps).Error

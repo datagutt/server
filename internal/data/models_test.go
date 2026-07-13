@@ -8,42 +8,116 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDeviceGetScheduledNightModeIsActiveAt(t *testing.T) {
-	device := Device{
-		NightModeEnabled: true,
-		NightStart:       "22:00",
-		NightEnd:         "06:00",
-	}
-	now := time.Date(2026, time.April, 24, 23, 30, 0, 0, time.UTC)
-
-	assert.True(t, device.GetScheduledNightModeIsActiveAt(now))
+func quietDevice(windows ...QuietWindow) Device {
+	return Device{QuietHours: QuietHoursConfig{Windows: windows}}
 }
 
-func TestDeviceGetNightModeNextChangeAt(t *testing.T) {
-	device := Device{
-		NightModeEnabled: true,
-		NightStart:       "22:00",
-		NightEnd:         "06:00",
+// windowAround builds a quiet window (all days) that is guaranteed active at now,
+// used to exercise time.Now-based methods deterministically.
+func windowAround(now time.Time, mode QuietMode) QuietWindow {
+	start := now.Add(-90 * time.Minute)
+	end := now.Add(90 * time.Minute)
+	return QuietWindow{
+		Enabled:   true,
+		StartHour: uint8(start.Hour()),
+		StartMin:  uint8(start.Minute()),
+		EndHour:   uint8(end.Hour()),
+		EndMin:    uint8(end.Minute()),
+		Days:      0x7F,
+		Mode:      mode,
 	}
-	now := time.Date(2026, time.April, 24, 23, 30, 0, 0, time.UTC)
-
-	nextChange := device.GetNightModeNextChangeAt(now)
-	require.NotNil(t, nextChange)
-	assert.Equal(t, time.Date(2026, time.April, 25, 6, 0, 0, 0, time.UTC), *nextChange)
 }
 
-func TestDeviceGetNightModeIsActiveUsesManualOverride(t *testing.T) {
-	override := false
-	overrideUntil := time.Now().Add(30 * time.Minute)
-	device := Device{
-		NightModeEnabled:       true,
-		NightStart:             "00:00",
-		NightEnd:               "23:59",
-		NightModeOverride:      &override,
-		NightModeOverrideUntil: &overrideUntil,
-	}
+func TestGetActiveQuietWindowOvernightWrap(t *testing.T) {
+	now := time.Date(2026, time.April, 24, 23, 30, 0, 0, time.UTC) // Friday
+	fri := uint8(1) << uint(now.Weekday())
+	d := quietDevice(QuietWindow{Enabled: true, StartHour: 22, EndHour: 6, Days: fri, Mode: QuietModeDim})
+	assert.NotNil(t, d.GetActiveQuietWindow(now))
 
-	assert.False(t, device.GetNightModeIsActive())
+	// Just before the window opens, it is inactive.
+	before := time.Date(2026, time.April, 24, 21, 30, 0, 0, time.UTC)
+	assert.Nil(t, d.GetActiveQuietWindow(before))
+}
+
+func TestGetActiveQuietWindowDayMaskExcludes(t *testing.T) {
+	now := time.Date(2026, time.April, 24, 23, 30, 0, 0, time.UTC) // Friday
+	sat := uint8(1) << uint((int(now.Weekday())+1)%7)
+	d := quietDevice(QuietWindow{Enabled: true, StartHour: 22, EndHour: 6, Days: sat, Mode: QuietModeDim})
+	// A Saturday-only window's evening does not cover Friday evening.
+	assert.Nil(t, d.GetActiveQuietWindow(now))
+}
+
+func TestGetActiveQuietWindowWrappedMorningAttribution(t *testing.T) {
+	now := time.Date(2026, time.April, 25, 5, 0, 0, 0, time.UTC) // Saturday 05:00
+	friday := uint8(1) << uint((int(now.Weekday())+6)%7)
+	// A Friday-only overnight window covers into Saturday morning.
+	dFri := quietDevice(QuietWindow{Enabled: true, StartHour: 22, EndHour: 6, Days: friday, Mode: QuietModeDim})
+	assert.NotNil(t, dFri.GetActiveQuietWindow(now))
+
+	// A Saturday-only window does NOT cover Saturday morning; that portion
+	// belongs to the window that started Friday night.
+	saturday := uint8(1) << uint(now.Weekday())
+	dSat := quietDevice(QuietWindow{Enabled: true, StartHour: 22, EndHour: 6, Days: saturday, Mode: QuietModeDim})
+	assert.Nil(t, dSat.GetActiveQuietWindow(now))
+}
+
+func TestGetActiveQuietWindowEndEqualsStartNeverActive(t *testing.T) {
+	now := time.Date(2026, time.April, 24, 22, 0, 0, 0, time.UTC)
+	d := quietDevice(QuietWindow{Enabled: true, StartHour: 22, EndHour: 22, Days: 0x7F, Mode: QuietModeDim})
+	assert.Nil(t, d.GetActiveQuietWindow(now))
+}
+
+func TestGetActiveQuietWindowDisabledIgnored(t *testing.T) {
+	now := time.Date(2026, time.April, 24, 23, 30, 0, 0, time.UTC)
+	d := quietDevice(QuietWindow{Enabled: false, StartHour: 22, EndHour: 6, Days: 0x7F, Mode: QuietModeDim})
+	assert.Nil(t, d.GetActiveQuietWindow(now))
+}
+
+func TestGetEffectiveBrightnessQuietModes(t *testing.T) {
+	now := time.Now().In(time.Local)
+
+	off := Device{Brightness: 80, QuietHours: QuietHoursConfig{Windows: []QuietWindow{windowAround(now, QuietModeOff)}}}
+	assert.Equal(t, 0, off.GetEffectiveBrightness())
+
+	dim := Device{Brightness: 80, QuietHours: QuietHoursConfig{Windows: []QuietWindow{windowAround(now, QuietModeDim)}}}
+	dim.QuietHours.Windows[0].Brightness = 10
+	assert.Equal(t, 10, dim.GetEffectiveBrightness())
+
+	app := Device{Brightness: 80, QuietHours: QuietHoursConfig{Windows: []QuietWindow{windowAround(now, QuietModeApp)}}}
+	assert.Equal(t, 80, app.GetEffectiveBrightness())
+
+	none := Device{Brightness: 80}
+	assert.Equal(t, 80, none.GetEffectiveBrightness())
+}
+
+func TestGetQuietIsActiveManualOverride(t *testing.T) {
+	now := time.Now()
+	overrideUntil := now.Add(30 * time.Minute)
+
+	// Override forces quiet OFF even though a window would otherwise be active,
+	// so delivery falls back to the normal brightness.
+	forcedOff := false
+	d := Device{
+		Brightness:         80,
+		QuietHours:         QuietHoursConfig{Windows: []QuietWindow{windowAround(now.In(time.Local), QuietModeOff)}},
+		QuietOverride:      &forcedOff,
+		QuietOverrideUntil: &overrideUntil,
+	}
+	assert.False(t, d.GetQuietIsActive())
+	assert.Equal(t, 80, d.GetEffectiveBrightness())
+
+	// Override forces quiet ON with no scheduled window active.
+	forcedOn := true
+	d2 := Device{QuietOverride: &forcedOn, QuietOverrideUntil: &overrideUntil}
+	assert.True(t, d2.GetQuietIsActive())
+}
+
+func TestGetQuietNextChangeAt(t *testing.T) {
+	now := time.Date(2026, time.April, 24, 23, 30, 0, 0, time.UTC) // Friday
+	d := quietDevice(QuietWindow{Enabled: true, StartHour: 22, EndHour: 6, Days: 0x7F, Mode: QuietModeDim})
+	next := d.GetQuietNextChangeAt(now)
+	require.NotNil(t, next)
+	assert.Equal(t, time.Date(2026, time.April, 25, 6, 0, 0, 0, time.UTC), *next)
 }
 
 func TestDeviceGetDimModeIsActiveUsesManualOverride(t *testing.T) {

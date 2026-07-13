@@ -288,25 +288,29 @@ func TestHandleUpdateInterval_Invalid(t *testing.T) {
 	}
 }
 
-func TestHandleSetNightModeOverride(t *testing.T) {
+func TestHandleSetQuietOverride(t *testing.T) {
 	s := newTestServer(t)
 
 	user := data.User{Username: "testuser"}
 	s.DB.Create(&user)
 	device := data.Device{
-		ID:               "testdevice",
-		Username:         "testuser",
-		Name:             "Test Device",
-		NightModeEnabled: true,
-		NightStart:       "22:00",
-		NightEnd:         "06:00",
+		ID:       "testdevice",
+		Username: "testuser",
+		Name:     "Test Device",
+		QuietHours: data.QuietHoursConfig{Windows: []data.QuietWindow{{
+			Enabled:   true,
+			StartHour: 22,
+			EndHour:   6,
+			Days:      0x7F,
+			Mode:      data.QuietModeDim,
+		}}},
 	}
 	s.DB.Create(&device)
 
 	form := url.Values{}
 	form.Add("active", "true")
 
-	req, _ := http.NewRequest(http.MethodPost, "/devices/testdevice/set_night_mode_override", strings.NewReader(form.Encode()))
+	req, _ := http.NewRequest(http.MethodPost, "/devices/testdevice/set_quiet_override", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	ctx := context.WithValue(req.Context(), userContextKey, &user)
@@ -314,17 +318,17 @@ func TestHandleSetNightModeOverride(t *testing.T) {
 	req = req.WithContext(ctx)
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(s.handleSetNightModeOverride)
+	handler := http.HandlerFunc(s.handleSetQuietOverride)
 	handler.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
 	var updatedDevice data.Device
 	require.NoError(t, s.DB.First(&updatedDevice, "id = ?", "testdevice").Error)
-	require.NotNil(t, updatedDevice.NightModeOverride)
-	require.NotNil(t, updatedDevice.NightModeOverrideUntil)
-	assert.True(t, *updatedDevice.NightModeOverride)
-	assert.True(t, updatedDevice.NightModeOverrideUntil.After(time.Now().Add(-time.Minute)))
+	require.NotNil(t, updatedDevice.QuietOverride)
+	require.NotNil(t, updatedDevice.QuietOverrideUntil)
+	assert.True(t, *updatedDevice.QuietOverride)
+	assert.True(t, updatedDevice.QuietOverrideUntil.After(time.Now().Add(-time.Minute)))
 }
 
 func TestHandleSetDimModeOverride(t *testing.T) {

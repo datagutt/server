@@ -38,7 +38,24 @@ func getFuncMap() template.FuncMap {
 		"webauthn_icon":  tmplWebAuthnIcon,
 		"installationID": tmplInstallationID,
 		"panelAspect":    tmplPanelAspect,
+		"bitSet":         tmplBitSet,
+		"add":            tmplAdd,
 	}
+}
+
+// tmplBitSet reports whether bit `pos` (0-indexed) is set in `mask`, used by the
+// quiet-hours editor to render weekday checkboxes from the Days bitmask.
+func tmplBitSet(mask uint8, pos int) bool {
+	if pos < 0 || pos > 7 {
+		return false
+	}
+	return mask&(uint8(1)<<uint(pos)) != 0
+}
+
+// tmplAdd returns a + b, used for turning a zero-based window index into a
+// human-friendly 1-based label in the quiet-hours editor.
+func tmplAdd(a, b int) int {
+	return a + b
 }
 
 func tmplSeq(start, end int) []int {

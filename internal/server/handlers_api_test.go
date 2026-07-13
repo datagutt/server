@@ -790,20 +790,24 @@ func TestHandlePatchDevice(t *testing.T) {
 	s.ServeHTTP(rr, req)
 }
 
-func TestHandlePatchDeviceNightModeActive(t *testing.T) {
+func TestHandlePatchDeviceQuietActive(t *testing.T) {
 	s := newTestServerAPI(t)
 	apiKey := "test_api_key"
 	deviceID := "testdevice"
 
 	device, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
 	require.NoError(t, err)
-	device.NightModeEnabled = true
-	device.NightStart = "22:00"
-	device.NightEnd = "06:00"
+	device.QuietHours = data.QuietHoursConfig{Windows: []data.QuietWindow{{
+		Enabled:   true,
+		StartHour: 22,
+		EndHour:   6,
+		Days:      0x7F,
+		Mode:      data.QuietModeDim,
+	}}}
 	require.NoError(t, s.DB.Save(device).Error)
 
 	active := true
-	update := DeviceUpdate{NightModeActive: &active}
+	update := DeviceUpdate{QuietActive: &active}
 	body, _ := json.Marshal(update)
 	req := newAPIRequest("PATCH", fmt.Sprintf("/v0/devices/%s", deviceID), apiKey, body)
 	rr := httptest.NewRecorder()
@@ -813,14 +817,14 @@ func TestHandlePatchDeviceNightModeActive(t *testing.T) {
 
 	var payload DevicePayload
 	require.NoError(t, json.NewDecoder(rr.Body).Decode(&payload))
-	assert.True(t, payload.NightMode.Active)
-	require.NotNil(t, payload.NightMode.OverrideUntil)
+	assert.True(t, payload.QuietHours.Active)
+	require.NotNil(t, payload.QuietHours.OverrideUntil)
 
 	updatedDevice, err := gorm.G[data.Device](s.DB).Where("id = ?", deviceID).First(context.Background())
 	require.NoError(t, err)
-	require.NotNil(t, updatedDevice.NightModeOverride)
-	require.NotNil(t, updatedDevice.NightModeOverrideUntil)
-	assert.True(t, *updatedDevice.NightModeOverride)
+	require.NotNil(t, updatedDevice.QuietOverride)
+	require.NotNil(t, updatedDevice.QuietOverrideUntil)
+	assert.True(t, *updatedDevice.QuietOverride)
 }
 
 func TestHandlePatchDeviceDimModeActive(t *testing.T) {

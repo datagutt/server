@@ -102,7 +102,7 @@ function updateInterval(deviceId, interval) {
     });
 }
 
-function setNightModeOverride(deviceId, active, input) {
+function setQuietOverride(deviceId, active, input) {
   const formData = new URLSearchParams();
   formData.append('active', active);
 
@@ -110,7 +110,7 @@ function setNightModeOverride(deviceId, active, input) {
     input.disabled = true;
   }
 
-  fetch(`/devices/${deviceId}/set_night_mode_override`, {
+  fetch(`/devices/${deviceId}/set_quiet_override`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -120,7 +120,7 @@ function setNightModeOverride(deviceId, active, input) {
     .then(async response => {
       if (!response.ok) {
         const message = await response.text();
-        throw new Error(message || 'Failed to update night mode');
+        throw new Error(message || 'Failed to update quiet hours');
       }
       window.location.reload();
     })
@@ -130,7 +130,7 @@ function setNightModeOverride(deviceId, active, input) {
         input.checked = !active;
         input.disabled = false;
       }
-      alert(error.message || 'Failed to update night mode');
+      alert(error.message || 'Failed to update quiet hours');
     });
 }
 

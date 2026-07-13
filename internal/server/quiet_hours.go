@@ -17,9 +17,9 @@ func deviceTimeNow(device *data.Device) time.Time {
 	return time.Now().In(loc)
 }
 
-func clearNightModeOverride(device *data.Device) {
-	device.NightModeOverride = nil
-	device.NightModeOverrideUntil = nil
+func clearQuietOverride(device *data.Device) {
+	device.QuietOverride = nil
+	device.QuietOverrideUntil = nil
 }
 
 func clearDimModeOverride(device *data.Device) {
@@ -27,20 +27,20 @@ func clearDimModeOverride(device *data.Device) {
 	device.DimModeOverrideUntil = nil
 }
 
-func setNightModeOverride(device *data.Device, active bool) (*time.Time, error) {
-	if !device.NightModeEnabled {
-		return nil, fmt.Errorf("night mode is not enabled for this device")
+func setQuietOverride(device *data.Device, active bool) (*time.Time, error) {
+	if !device.HasEnabledQuietWindow() {
+		return nil, fmt.Errorf("quiet hours is not enabled for this device")
 	}
 
 	now := deviceTimeNow(device)
-	nextChange := device.GetNightModeNextChangeAt(now)
+	nextChange := device.GetQuietNextChangeAt(now)
 	if nextChange == nil {
-		return nil, fmt.Errorf("night mode schedule is incomplete")
+		return nil, fmt.Errorf("quiet hours schedule is incomplete")
 	}
 
 	override := active
-	device.NightModeOverride = &override
-	device.NightModeOverrideUntil = nextChange
+	device.QuietOverride = &override
+	device.QuietOverrideUntil = nextChange
 	return nextChange, nil
 }
 

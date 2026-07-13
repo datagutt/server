@@ -14,7 +14,25 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestDetermineNextApp_NightMode(t *testing.T) {
+// allDayQuietAppWindow returns a quiet-hours "app" window guaranteed active at
+// the current wall-clock time, used to exercise the quiet app selection path.
+func allDayQuietAppWindow(appIname string) data.QuietHoursConfig {
+	now := time.Now()
+	start := now.Add(-90 * time.Minute)
+	end := now.Add(90 * time.Minute)
+	return data.QuietHoursConfig{Windows: []data.QuietWindow{{
+		Enabled:   true,
+		StartHour: uint8(start.Hour()),
+		StartMin:  uint8(start.Minute()),
+		EndHour:   uint8(end.Hour()),
+		EndMin:    uint8(end.Minute()),
+		Days:      0x7F,
+		Mode:      data.QuietModeApp,
+		AppIname:  appIname,
+	}}}
+}
+
+func TestDetermineNextApp_QuietHoursApp(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
 
@@ -24,14 +42,11 @@ func TestDetermineNextApp_NightMode(t *testing.T) {
 		t.Fatalf("failed to create user: %v", err)
 	}
 
-	// Create a device with Night Mode enabled all day
+	// Create a device with an all-day quiet-hours "app" window
 	device := data.Device{
-		ID:               "device1",
-		Username:         user.Username,
-		NightModeEnabled: true,
-		NightStart:       "00:00",
-		NightEnd:         "23:59",
-		NightModeApp:     "app-night",
+		ID:         "device1",
+		Username:   user.Username,
+		QuietHours: allDayQuietAppWindow("app-night"),
 	}
 	if err := gorm.G[data.Device](s.DB).Create(ctx, &device); err != nil {
 		t.Fatalf("failed to create device: %v", err)
@@ -50,17 +65,17 @@ func TestDetermineNextApp_NightMode(t *testing.T) {
 		t.Fatalf("failed to create regular app: %v", err)
 	}
 
-	// Create Night Mode App
+	// Create Quiet Hours App
 	appNight := data.App{
 		DeviceID: device.ID,
 		Iname:    "app-night",
-		Name:     "Night App",
+		Name:     "Quiet App",
 		Enabled:  false, // Usually disabled for day rotation
 		Pushed:   true,  // Bypass rendering check
 		Order:    2,
 	}
 	if err := gorm.G[data.App](s.DB).Create(ctx, &appNight); err != nil {
-		t.Fatalf("failed to create night app: %v", err)
+		t.Fatalf("failed to create quiet app: %v", err)
 	}
 
 	// Reload device with apps
@@ -95,7 +110,7 @@ func TestDetermineNextApp_NightMode(t *testing.T) {
 	}
 }
 
-func TestDetermineNextApp_NightMode_NoAppSelected(t *testing.T) {
+func TestDetermineNextApp_QuietHoursApp_NoAppSelected(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
 
@@ -105,14 +120,12 @@ func TestDetermineNextApp_NightMode_NoAppSelected(t *testing.T) {
 		t.Fatalf("failed to create user: %v", err)
 	}
 
-	// Create a device with Night Mode enabled all day but NO NightModeApp selected
+	// Create a device with an all-day quiet-hours "app" window but NO app selected
+	quiet := allDayQuietAppWindow("")
 	device := data.Device{
-		ID:               "device2",
-		Username:         user.Username,
-		NightModeEnabled: true,
-		NightStart:       "00:00",
-		NightEnd:         "23:59",
-		NightModeApp:     "", // Empty!
+		ID:         "device2",
+		Username:   user.Username,
+		QuietHours: quiet,
 	}
 	if err := gorm.G[data.Device](s.DB).Create(ctx, &device); err != nil {
 		t.Fatalf("failed to create device: %v", err)
@@ -154,7 +167,7 @@ func TestDetermineNextApp_NightMode_NoAppSelected(t *testing.T) {
 	}
 }
 
-func TestDetermineNextApp_NightModePrecedence(t *testing.T) {
+func TestDetermineNextApp_QuietHoursPrecedence(t *testing.T) {
 	s := newTestServer(t)
 	ctx := context.Background()
 
@@ -166,16 +179,13 @@ func TestDetermineNextApp_NightModePrecedence(t *testing.T) {
 	pinnedAppID := "app-pinned"
 	nightAppID := "app-night"
 
-	// Create a device with both Pinned App and Night Mode App
+	// Create a device with both a Pinned App and an all-day quiet-hours app
 	device := data.Device{
-		ID:               "device_precedence",
-		Username:         user.Username,
-		PinnedApp:        &pinnedAppID,
-		NightModeEnabled: true,
-		NightStart:       "00:00", // Always active
-		NightEnd:         "23:59",
-		NightModeApp:     nightAppID,
-		LastAppIndex:     -1,
+		ID:           "device_precedence",
+		Username:     user.Username,
+		PinnedApp:    &pinnedAppID,
+		QuietHours:   allDayQuietAppWindow(nightAppID),
+		LastAppIndex: -1,
 	}
 	if err := gorm.G[data.Device](s.DB).Create(ctx, &device); err != nil {
 		t.Fatalf("failed to create device: %v", err)
@@ -193,7 +203,7 @@ func TestDetermineNextApp_NightModePrecedence(t *testing.T) {
 		t.Fatalf("failed to create pinned app: %v", err)
 	}
 
-	// Create Night Mode App
+	// Create the quiet-hours app
 	if err := gorm.G[data.App](s.DB).Create(ctx, &data.App{
 		DeviceID: device.ID,
 		Iname:    nightAppID,
@@ -211,23 +221,23 @@ func TestDetermineNextApp_NightModePrecedence(t *testing.T) {
 		t.Fatalf("failed to reload device with apps: %v", err)
 	}
 
-	// 1. Verify Night Mode wins when active
+	// 1. Verify the quiet-hours app wins when a quiet window is active
 	app, _, err := s.determineNextApp(ctx, &d, &user)
 	if err != nil {
 		t.Fatalf("determineNextApp failed: %v", err)
 	}
 	if app == nil || app.Iname != nightAppID {
-		t.Errorf("Expected Night Mode app (%s) to take precedence, but got %v", nightAppID, app)
+		t.Errorf("Expected quiet-hours app (%s) to take precedence, but got %v", nightAppID, app)
 	}
 
-	// 2. Verify Pinned App wins when Night Mode is inactive
-	d.NightModeEnabled = false
+	// 2. Verify the pinned app wins once quiet hours are cleared
+	d.QuietHours = data.QuietHoursConfig{}
 	app, _, err = s.determineNextApp(ctx, &d, &user)
 	if err != nil {
-		t.Fatalf("determineNextApp failed (night mode disabled): %v", err)
+		t.Fatalf("determineNextApp failed (quiet hours cleared): %v", err)
 	}
 	if app == nil || app.Iname != pinnedAppID {
-		t.Errorf("Expected Pinned app (%s) to be displayed when night mode is inactive, but got %v", pinnedAppID, app)
+		t.Errorf("Expected Pinned app (%s) to be displayed when quiet hours are inactive, but got %v", pinnedAppID, app)
 	}
 }
 

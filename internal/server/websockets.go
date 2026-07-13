@@ -107,6 +107,15 @@ func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 			slog.Error("Failed to update protocol_type", "error", err)
 		}
 	}
+	// Sync the device's local quiet-hours schedule on connect so it can blank
+	// on time even while offline, without waiting for the next schedule edit.
+	if payload, err := buildQuietHoursCommand(device); err != nil {
+		slog.Error("Failed to build quiet-hours command on connect", "device", deviceID, "error", err)
+	} else if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+		slog.Error("Failed to send quiet-hours config on connect", "device", deviceID, "error", err)
+		return
+	}
+
 	ch := s.Broadcaster.Subscribe(deviceID)
 	defer s.Broadcaster.Unsubscribe(deviceID, ch)
 

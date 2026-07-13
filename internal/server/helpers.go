@@ -56,6 +56,21 @@ type DeviceTypeGroup struct {
 	Options []DeviceTypeOption
 }
 
+// QuietWindowView is the per-window view model for the quiet-hours editor. It
+// pads the device's stored windows out to a fixed set of rows so the form can
+// always render every slot, with times pre-formatted and brightness expressed
+// on the 0-5 UI scale.
+type QuietWindowView struct {
+	Index        int
+	Enabled      bool
+	Start        string // HH:MM
+	End          string // HH:MM
+	Days         uint8  // bit0=Sunday .. bit6=Saturday
+	Mode         string // off | dim | app
+	BrightnessUI int
+	AppIname     string
+}
+
 // DeviceSummary is a lightweight struct for "Copy to" dropdown targets.
 type DeviceSummary struct {
 	ID   string
@@ -102,7 +117,7 @@ type TemplateData struct {
 	DefaultWsURL             string
 	FirmwareImgURL           string
 	BrightnessUI             int
-	NightBrightnessUI        int
+	QuietWindows             []QuietWindowView
 	DimBrightnessUI          int
 	DefaultBrightnessScale   string
 

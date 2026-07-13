@@ -23,36 +23,39 @@ type LegacyUser struct {
 }
 
 type LegacyDevice struct {
-	ID                    string                     `json:"id"`
-	Name                  string                     `json:"name"`
-	Type                  string                     `json:"type"`
-	APIKey                string                     `json:"api_key"`
-	ImgURL                string                     `json:"img_url"`
-	WsURL                 string                     `json:"ws_url"`
-	Notes                 string                     `json:"notes"`
-	Brightness            any                        `json:"brightness"` // Can be int or object
-	CustomBrightnessScale string                     `json:"custom_brightness_scale"`
-	NightModeEnabled      bool                       `json:"night_mode_enabled"`
-	NightModeApp          string                     `json:"night_mode_app"`
-	NightStart            any                        `json:"night_start"` // Can be HH:MM or int
-	NightEnd              any                        `json:"night_end"`
-	NightBrightness       any                        `json:"night_brightness"`
-	DimTime               *string                    `json:"dim_time"`
-	DimBrightness         any                        `json:"dim_brightness"`
-	DefaultInterval       int                        `json:"default_interval"`
-	Timezone              *string                    `json:"timezone"`
-	Locale                *string                    `json:"locale"`
-	Location              *LegacyLocation            `json:"location"`
-	Apps                  map[string]json.RawMessage `json:"apps"`
-	LastAppIndex          int                        `json:"last_app_index"`
-	PinnedApp             *string                    `json:"pinned_app"`
-	InterstitialEnabled   bool                       `json:"interstitial_enabled"`
-	InterstitialApp       *string                    `json:"interstitial_app"`
-	LastSeen              *time.Time                 `json:"last_seen"`
-	Info                  LegacyDeviceInfo           `json:"info"`
-	ColorFilter           *string                    `json:"color_filter"`
-	NightColorFilter      *string                    `json:"night_color_filter"`
-	DimColorFilter        *string                    `json:"dim_color_filter"`
+	ID                    string `json:"id"`
+	Name                  string `json:"name"`
+	Type                  string `json:"type"`
+	APIKey                string `json:"api_key"`
+	ImgURL                string `json:"img_url"`
+	WsURL                 string `json:"ws_url"`
+	Notes                 string `json:"notes"`
+	Brightness            any    `json:"brightness"` // Can be int or object
+	CustomBrightnessScale string `json:"custom_brightness_scale"`
+	// Legacy night-mode fields (legacy-migration-only). They are read from the
+	// old Python data blob and collapsed into a quiet-hours window by the
+	// converter; the modern model has no night-mode concept.
+	NightModeEnabled    bool                       `json:"night_mode_enabled"`
+	NightModeApp        string                     `json:"night_mode_app"`
+	NightStart          any                        `json:"night_start"` // Can be HH:MM or int
+	NightEnd            any                        `json:"night_end"`
+	NightBrightness     any                        `json:"night_brightness"`
+	DimTime             *string                    `json:"dim_time"`
+	DimBrightness       any                        `json:"dim_brightness"`
+	DefaultInterval     int                        `json:"default_interval"`
+	Timezone            *string                    `json:"timezone"`
+	Locale              *string                    `json:"locale"`
+	Location            *LegacyLocation            `json:"location"`
+	Apps                map[string]json.RawMessage `json:"apps"`
+	LastAppIndex        int                        `json:"last_app_index"`
+	PinnedApp           *string                    `json:"pinned_app"`
+	InterstitialEnabled bool                       `json:"interstitial_enabled"`
+	InterstitialApp     *string                    `json:"interstitial_app"`
+	LastSeen            *time.Time                 `json:"last_seen"`
+	Info                LegacyDeviceInfo           `json:"info"`
+	ColorFilter         *string                    `json:"color_filter"`
+	NightColorFilter    *string                    `json:"night_color_filter"`
+	DimColorFilter      *string                    `json:"dim_color_filter"`
 }
 
 type LegacyLocation struct {

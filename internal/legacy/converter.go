@@ -56,10 +56,6 @@ func (ld *LegacyDevice) ToDataDevice(username string) data.Device {
 		WsURL:                 ld.WsURL,
 		Notes:                 ld.Notes,
 		CustomBrightnessScale: ld.CustomBrightnessScale,
-		NightModeEnabled:      ld.NightModeEnabled,
-		NightModeApp:          ld.NightModeApp,
-		NightStart:            ParseTimeStr(ld.NightStart),
-		NightEnd:              ParseTimeStr(ld.NightEnd),
 		DefaultInterval:       ld.DefaultInterval,
 		LastAppIndex:          ld.LastAppIndex,
 		InterstitialEnabled:   ld.InterstitialEnabled,
@@ -67,7 +63,6 @@ func (ld *LegacyDevice) ToDataDevice(username string) data.Device {
 
 	// Brightness
 	nd.Brightness = data.Brightness(ParseBrightness(ld.Brightness))
-	nd.NightBrightness = data.Brightness(ParseBrightness(ld.NightBrightness))
 	if ld.DimBrightness != nil {
 		v := data.Brightness(ParseBrightness(ld.DimBrightness))
 		nd.DimBrightness = &v
@@ -128,10 +123,9 @@ func (ld *LegacyDevice) ToDataDevice(username string) data.Device {
 		cf := data.ColorFilter(*ld.ColorFilter)
 		nd.ColorFilter = &cf
 	}
-	if ld.NightColorFilter != nil {
-		cf := data.ColorFilter(*ld.NightColorFilter)
-		nd.NightColorFilter = &cf
-	}
+	// Legacy night-mode settings collapse into a single quiet-hours window
+	// covering all days.
+	nd.QuietHours = legacyQuietHours(ld)
 
 	// Map Apps
 	for _, rawApp := range ld.Apps {
@@ -258,6 +252,55 @@ func ParseTimeStr(val any) string {
 		return fmt.Sprintf("%02d:00", int(f))
 	}
 	return ""
+}
+
+// parseLegacyClock parses a legacy "HH:MM" value into hour/minute components.
+func parseLegacyClock(val any) (uint8, uint8) {
+	s := ParseTimeStr(val)
+	parts := strings.Split(s, ":")
+	if len(parts) != 2 {
+		return 0, 0
+	}
+	hour, err := strconv.Atoi(parts[0])
+	if err != nil || hour < 0 || hour > 23 {
+		return 0, 0
+	}
+	minute, err := strconv.Atoi(parts[1])
+	if err != nil || minute < 0 || minute > 59 {
+		return 0, 0
+	}
+	return uint8(hour), uint8(minute)
+}
+
+// legacyQuietHours maps a legacy device's night-mode settings into a single
+// quiet-hours window. App mode is chosen when a night mode app was configured,
+// otherwise dim mode carries the legacy night brightness.
+func legacyQuietHours(ld *LegacyDevice) data.QuietHoursConfig {
+	startHour, startMin := parseLegacyClock(ld.NightStart)
+	endHour, endMin := parseLegacyClock(ld.NightEnd)
+
+	appIname := ld.NightModeApp
+	if appIname == "None" {
+		appIname = ""
+	}
+
+	window := data.QuietWindow{
+		Enabled:   ld.NightModeEnabled,
+		StartHour: startHour,
+		StartMin:  startMin,
+		EndHour:   endHour,
+		EndMin:    endMin,
+		Days:      0x7F, // all days
+		Mode:      data.QuietModeDim,
+	}
+	if appIname != "" {
+		window.Mode = data.QuietModeApp
+		window.AppIname = appIname
+	} else {
+		window.Brightness = data.Brightness(ParseBrightness(ld.NightBrightness))
+	}
+
+	return data.QuietHoursConfig{Windows: []data.QuietWindow{window}}
 }
 
 // ParseDuration parses ISO8601 duration (PT1.5S) or numeric seconds into int64 nanoseconds.

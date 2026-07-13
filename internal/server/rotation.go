@@ -222,24 +222,23 @@ func (s *Server) GetCurrentAppImage(ctx context.Context, device *data.Device) ([
 }
 
 func (s *Server) determineNextApp(ctx context.Context, device *data.Device, user *data.User) (*data.App, int, error) {
-	// 1. Night Mode Logic (Highest Priority)
-	nightModeActive := device.GetNightModeIsActive()
-	if nightModeActive && device.NightModeApp != "" {
-		nightIname := device.NightModeApp
+	// 1. Quiet Hours "app" window (Highest Priority)
+	if qw := device.GetEffectiveQuietWindow(deviceTimeNow(device)); qw != nil && qw.Mode == data.QuietModeApp && qw.AppIname != "" {
+		quietIname := qw.AppIname
 		for i := range device.Apps {
-			if device.Apps[i].Iname == nightIname {
+			if device.Apps[i].Iname == quietIname {
 				app := device.Apps[i]
-				// Found Night Mode app, check if it's renderable before returning
+				// Found quiet hours app, check if it's renderable before returning
 				if s.possiblyRender(ctx, app, device, user) && !app.EmptyLastRender {
 					return app, device.LastAppIndex, nil
 				}
 				// Stop if context was canceled
 				if ctx.Err() != nil {
-					slog.Debug("Context canceled during night mode app render", "device", device.ID)
+					slog.Debug("Context canceled during quiet hours app render", "device", device.ID)
 					return nil, 0, ctx.Err()
 				}
-				slog.Warn("Night Mode App failed to render, falling back", "app", nightIname, "device", device.ID)
-				break // Stop looking for night app and fall through
+				slog.Warn("Quiet Hours App failed to render, falling back", "app", quietIname, "device", device.ID)
+				break // Stop looking for quiet hours app and fall through
 			}
 		}
 	}

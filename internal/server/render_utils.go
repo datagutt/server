@@ -262,7 +262,7 @@ func (s *Server) getEffectiveFilters(device *data.Device, app *data.App) []strin
 func (s *Server) getEffectiveFiltersAt(device *data.Device, app *data.App, at time.Time) []string {
 	var filters []string
 
-	// Night/dim mode filters override app-level filters when set to a real filter.
+	// Dim mode filters override app-level filters when set to a real filter.
 	if modeFilter := deviceModeColorFilterAt(device, at); modeFilter != nil && *modeFilter != data.ColorFilterNone {
 		filters = append(filters, string(*modeFilter))
 		return filters
@@ -304,9 +304,6 @@ func (s *Server) filtersChangedSinceLastRenderAt(device *data.Device, app *data.
 }
 
 func deviceModeColorFilterAt(device *data.Device, at time.Time) *data.ColorFilter {
-	if device.GetNightModeIsActiveAt(at) && device.NightColorFilter != nil {
-		return device.NightColorFilter
-	}
 	if device.GetDimModeIsActiveAt(at) && device.DimColorFilter != nil {
 		return device.DimColorFilter
 	}

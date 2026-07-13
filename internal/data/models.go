@@ -416,6 +416,66 @@ const (
 	ColorFilterPastel     ColorFilter = "pastel"
 )
 
+// QuietMode selects what a quiet-hours window does while active.
+type QuietMode string
+
+const (
+	QuietModeOff QuietMode = "off" // display fully off
+	QuietModeDim QuietMode = "dim" // reduce brightness to the window's Brightness
+	QuietModeApp QuietMode = "app" // serve the window's AppIname
+)
+
+// QuietWindow describes one quiet-hours schedule window. The window model
+// (times as hour/minute pairs, a weekday bitmask, and overnight wrap) matches
+// the device firmware exactly so server and device share one mental model.
+//
+// Days is a bitmask with bit0=Sunday .. bit6=Saturday. A window with EndHour:Min
+// less than or equal to StartHour:Min wraps past midnight, and the wrapped
+// morning portion is attributed to the day the window STARTED (so a Friday-only
+// window covers into Saturday morning). end==start is never active.
+type QuietWindow struct {
+	Enabled    bool       `json:"enabled"`
+	StartHour  uint8      `json:"start_hour"`
+	StartMin   uint8      `json:"start_min"`
+	EndHour    uint8      `json:"end_hour"`
+	EndMin     uint8      `json:"end_min"`
+	Days       uint8      `json:"days"` // bit0=Sunday .. bit6=Saturday
+	Mode       QuietMode  `json:"mode"`
+	Brightness Brightness `json:"brightness"` // used when Mode == QuietModeDim
+	AppIname   string     `json:"app_iname"`  // used when Mode == QuietModeApp
+}
+
+// QuietHoursConfig holds up to four quiet-hours windows. Stored as a JSON text
+// column on Device via the driver.Valuer / sql.Scanner pair below.
+type QuietHoursConfig struct {
+	Windows []QuietWindow `json:"windows"`
+}
+
+func (q QuietHoursConfig) Value() (driver.Value, error) {
+	return json.Marshal(q)
+}
+
+func (q *QuietHoursConfig) Scan(value any) error {
+	if value == nil {
+		*q = QuietHoursConfig{}
+		return nil
+	}
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return errors.New("type assertion to []byte or string failed")
+	}
+	if len(bytes) == 0 {
+		*q = QuietHoursConfig{}
+		return nil
+	}
+	return json.Unmarshal(bytes, q)
+}
+
 // DeviceLocation stores lat/lng and timezone.
 type DeviceLocation struct {
 	Description string  `json:"description"`
@@ -621,29 +681,25 @@ type App struct {
 }
 
 type Device struct {
-	ID                     string      `gorm:"primaryKey"                          json:"id"` // 8-char hex
-	Username               string      `gorm:"index"                               json:"username"`
-	Name                   string      `json:"name"`
-	Type                   DeviceType  `gorm:"type:text"                           json:"type"`
-	APIKey                 string      `gorm:"uniqueIndex"                         json:"api_key"`
-	ImgURL                 string      `json:"img_url"`
-	WsURL                  string      `json:"ws_url"`
-	Notes                  string      `json:"notes"`
-	Brightness             Brightness  `gorm:"default:20"                          json:"brightness"` // 0-100
-	CustomBrightnessScale  string      `json:"custom_brightness_scale"`
-	NightModeEnabled       bool        `json:"night_mode_enabled"`
-	NightModeApp           string      `json:"night_mode_app"`
-	NightStart             string      `json:"night_start"` // HH:MM
-	NightEnd               string      `json:"night_end"`   // HH:MM
-	NightBrightness        Brightness  `gorm:"default:0"                           json:"night_brightness"`
-	NightModeOverride      *bool       `json:"night_mode_override,omitempty"`
-	NightModeOverrideUntil *time.Time  `json:"night_mode_override_until,omitempty"`
-	DimModeEnabled         bool        `json:"dim_mode_enabled"`
-	DimModeOverride        *bool       `json:"dim_mode_override,omitempty"`
-	DimModeOverrideUntil   *time.Time  `json:"dim_mode_override_until,omitempty"`
-	DimTime                *string     `json:"dim_time"`
-	DimBrightness          *Brightness `json:"dim_brightness"`
-	DefaultInterval        int         `gorm:"default:15"                          json:"default_interval"`
+	ID                    string           `gorm:"primaryKey"                          json:"id"` // 8-char hex
+	Username              string           `gorm:"index"                               json:"username"`
+	Name                  string           `json:"name"`
+	Type                  DeviceType       `gorm:"type:text"                           json:"type"`
+	APIKey                string           `gorm:"uniqueIndex"                         json:"api_key"`
+	ImgURL                string           `json:"img_url"`
+	WsURL                 string           `json:"ws_url"`
+	Notes                 string           `json:"notes"`
+	Brightness            Brightness       `gorm:"default:20"                          json:"brightness"` // 0-100
+	CustomBrightnessScale string           `json:"custom_brightness_scale"`
+	QuietHours            QuietHoursConfig `gorm:"type:text" json:"quiet_hours"`
+	QuietOverride         *bool            `json:"quiet_override,omitempty"`
+	QuietOverrideUntil    *time.Time       `json:"quiet_override_until,omitempty"`
+	DimModeEnabled        bool             `json:"dim_mode_enabled"`
+	DimModeOverride       *bool            `json:"dim_mode_override,omitempty"`
+	DimModeOverrideUntil  *time.Time       `json:"dim_mode_override_until,omitempty"`
+	DimTime               *string          `json:"dim_time"`
+	DimBrightness         *Brightness      `json:"dim_brightness"`
+	DefaultInterval       int              `gorm:"default:15"                          json:"default_interval"`
 
 	Timezone *string `json:"timezone"`
 	Locale   *string `json:"locale"`
@@ -662,9 +718,8 @@ type Device struct {
 	// DeviceInfo fields (FirmwareVersion etc)
 	Info DeviceInfo `gorm:"type:text" json:"info"`
 
-	ColorFilter      *ColorFilter `json:"color_filter"`
-	NightColorFilter *ColorFilter `json:"night_color_filter"`
-	DimColorFilter   *ColorFilter `json:"dim_color_filter"`
+	ColorFilter    *ColorFilter `json:"color_filter"`
+	DimColorFilter *ColorFilter `json:"dim_color_filter"`
 
 	// OTA
 	SwapColors       bool   `json:"swap_colors"`
@@ -832,18 +887,6 @@ func (d Device) GetLocation() *time.Location {
 	return loc
 }
 
-func (d Device) getNightScheduleBounds() (string, string) {
-	start := "22:00"
-	if d.NightStart != "" {
-		start = d.NightStart
-	}
-	end := "06:00"
-	if d.NightEnd != "" {
-		end = d.NightEnd
-	}
-	return start, end
-}
-
 func clockToMinutes(value string) (int, bool) {
 	parts := strings.Split(value, ":")
 	if len(parts) != 2 {
@@ -860,65 +903,117 @@ func clockToMinutes(value string) (int, bool) {
 	return hours*60 + minutes, true
 }
 
-func (d Device) GetScheduledNightModeIsActiveAt(now time.Time) bool {
-	if !d.NightModeEnabled {
+// quietWindowActiveAt reports whether a single quiet window is active at now.
+// It honors the weekday bitmask, overnight wrap, wrapped-morning attribution
+// (the morning portion belongs to the day the window started), and the
+// end==start-never rule. now must already be in the device-local location.
+func quietWindowActiveAt(w QuietWindow, now time.Time) bool {
+	if !w.Enabled {
 		return false
 	}
+	startMinutes := int(w.StartHour)*60 + int(w.StartMin)
+	endMinutes := int(w.EndHour)*60 + int(w.EndMin)
+	if startMinutes == endMinutes {
+		return false // never active
+	}
 
-	start, end := d.getNightScheduleBounds()
 	currentMinutes := now.Hour()*60 + now.Minute()
-	startMinutes, startOK := clockToMinutes(start)
-	endMinutes, endOK := clockToMinutes(end)
-	if !startOK || !endOK {
-		return false
+	todayBit := uint8(1) << uint(now.Weekday())
+	// The morning wrap of a window is attributed to the previous day's bit.
+	yesterdayBit := uint8(1) << uint((int(now.Weekday())+6)%7)
+
+	if endMinutes > startMinutes {
+		// Same-day window [start, end).
+		return currentMinutes >= startMinutes && currentMinutes < endMinutes && w.Days&todayBit != 0
 	}
 
-	if startMinutes > endMinutes {
-		return currentMinutes >= startMinutes || currentMinutes <= endMinutes
+	// Overnight window: evening portion [start, midnight) on the start day,
+	// morning portion [midnight, end) attributed back to the start day.
+	if currentMinutes >= startMinutes && w.Days&todayBit != 0 {
+		return true
 	}
-	return currentMinutes >= startMinutes && currentMinutes <= endMinutes
+	if currentMinutes < endMinutes && w.Days&yesterdayBit != 0 {
+		return true
+	}
+	return false
 }
 
-func (d Device) GetNightModeNextChangeAt(now time.Time) *time.Time {
-	if !d.NightModeEnabled {
-		return nil
-	}
-
-	start, end := d.getNightScheduleBounds()
-	startParsed, err := time.Parse("15:04", start)
-	if err != nil {
-		return nil
-	}
-	endParsed, err := time.Parse("15:04", end)
-	if err != nil {
-		return nil
-	}
-
-	var next *time.Time
-	for dayOffset := 0; dayOffset <= 2; dayOffset++ {
-		day := now.AddDate(0, 0, dayOffset)
-		candidates := []time.Time{
-			time.Date(day.Year(), day.Month(), day.Day(), startParsed.Hour(), startParsed.Minute(), 0, 0, now.Location()),
-			time.Date(day.Year(), day.Month(), day.Day(), endParsed.Hour(), endParsed.Minute(), 0, 0, now.Location()),
+// GetActiveQuietWindow returns the first enabled quiet window active at now
+// (schedule only, ignoring the manual override). now must already be in the
+// device-local location.
+func (d Device) GetActiveQuietWindow(now time.Time) *QuietWindow {
+	for i := range d.QuietHours.Windows {
+		if quietWindowActiveAt(d.QuietHours.Windows[i], now) {
+			return &d.QuietHours.Windows[i]
 		}
-		for _, candidate := range candidates {
-			if !candidate.After(now) {
+	}
+	return nil
+}
+
+// HasEnabledQuietWindow reports whether any quiet window is enabled.
+func (d Device) HasEnabledQuietWindow() bool {
+	for _, w := range d.QuietHours.Windows {
+		if w.Enabled {
+			return true
+		}
+	}
+	return false
+}
+
+// GetQuietOverrideActiveAt reports whether a manual quiet override is in effect.
+func (d Device) GetQuietOverrideActiveAt(now time.Time) bool {
+	if d.QuietOverride == nil || d.QuietOverrideUntil == nil {
+		return false
+	}
+	return now.Before(d.QuietOverrideUntil.In(now.Location()))
+}
+
+// GetEffectiveQuietWindow returns the quiet window that should drive delivery at
+// now, applying the manual override: an override of false suppresses quiet hours
+// entirely (user forces the display back to normal), an override of true keeps
+// the scheduled window. now must already be in the device-local location.
+func (d Device) GetEffectiveQuietWindow(now time.Time) *QuietWindow {
+	if d.GetQuietOverrideActiveAt(now) && d.QuietOverride != nil && !*d.QuietOverride {
+		return nil
+	}
+	return d.GetActiveQuietWindow(now)
+}
+
+// GetQuietNextChangeAt returns the next quiet-window boundary (a start or end
+// edge of any enabled window) strictly after now, used to bound a manual
+// override. now must already be in the device-local location.
+func (d Device) GetQuietNextChangeAt(now time.Time) *time.Time {
+	var next *time.Time
+	consider := func(candidate time.Time) {
+		if !candidate.After(now) {
+			return
+		}
+		if next == nil || candidate.Before(*next) {
+			c := candidate
+			next = &c
+		}
+	}
+	for _, w := range d.QuietHours.Windows {
+		if !w.Enabled {
+			continue
+		}
+		startMinutes := int(w.StartHour)*60 + int(w.StartMin)
+		endMinutes := int(w.EndHour)*60 + int(w.EndMin)
+		for dayOffset := 0; dayOffset <= 7; dayOffset++ {
+			day := now.AddDate(0, 0, dayOffset)
+			startDayBit := uint8(1) << uint(day.Weekday())
+			if w.Days&startDayBit == 0 {
 				continue
 			}
-			if next == nil || candidate.Before(*next) {
-				candidateCopy := candidate
-				next = &candidateCopy
+			consider(time.Date(day.Year(), day.Month(), day.Day(), int(w.StartHour), int(w.StartMin), 0, 0, now.Location()))
+			endDay := day
+			if endMinutes <= startMinutes {
+				endDay = day.AddDate(0, 0, 1)
 			}
+			consider(time.Date(endDay.Year(), endDay.Month(), endDay.Day(), int(w.EndHour), int(w.EndMin), 0, 0, now.Location()))
 		}
 	}
 	return next
-}
-
-func (d Device) GetNightModeOverrideActiveAt(now time.Time) bool {
-	if d.NightModeOverride == nil || d.NightModeOverrideUntil == nil {
-		return false
-	}
-	return now.Before(d.NightModeOverrideUntil.In(now.Location()))
 }
 
 func (d Device) getDimScheduleBounds() (string, string, bool) {
@@ -926,10 +1021,8 @@ func (d Device) getDimScheduleBounds() (string, string, bool) {
 		return "", "", false
 	}
 	start := *d.DimTime
+	// Dim Mode has no dedicated end field; it runs from DimTime until 06:00.
 	end := "06:00"
-	if d.NightEnd != "" {
-		end = d.NightEnd
-	}
 	return start, end, true
 }
 
@@ -1000,32 +1093,30 @@ func (d Device) GetDimModeOverrideActiveAt(now time.Time) bool {
 	return now.Before(d.DimModeOverrideUntil.In(now.Location()))
 }
 
-// GetNightModeIsActiveAt checks if night mode is active at a specific time.
-func (d Device) GetNightModeIsActiveAt(at time.Time) bool {
-	if !d.NightModeEnabled {
-		return false
-	}
-
+// GetQuietIsActiveAt reports whether quiet hours are active at a specific
+// time, honoring the manual override the same way night mode used to.
+func (d Device) GetQuietIsActiveAt(at time.Time) bool {
 	at = at.In(d.GetLocation())
-	if d.GetNightModeOverrideActiveAt(at) {
-		return d.NightModeOverride != nil && *d.NightModeOverride
+	if d.GetQuietOverrideActiveAt(at) {
+		return d.QuietOverride != nil && *d.QuietOverride
 	}
-	return d.GetScheduledNightModeIsActiveAt(at)
+	return d.GetActiveQuietWindow(at) != nil
 }
 
-// GetNightModeIsActive checks if night mode is currently active for a device.
-func (d Device) GetNightModeIsActive() bool {
-	return d.GetNightModeIsActiveAt(time.Now())
+// GetQuietIsActive reports whether quiet hours are currently active for a device.
+func (d Device) GetQuietIsActive() bool {
+	return d.GetQuietIsActiveAt(time.Now())
 }
 
-// GetDimModeIsActiveAt checks if dim mode is active at a specific time.
+// GetDimModeIsActiveAt checks if dim mode is active at a specific time. Quiet
+// hours takes precedence.
 func (d Device) GetDimModeIsActiveAt(at time.Time) bool {
 	if !d.DimModeEnabled {
 		return false
 	}
 
 	at = at.In(d.GetLocation())
-	if d.GetNightModeIsActiveAt(at) {
+	if d.GetEffectiveQuietWindow(at) != nil {
 		return false
 	}
 	if d.GetDimModeOverrideActiveAt(at) {
@@ -1034,7 +1125,14 @@ func (d Device) GetDimModeIsActiveAt(at time.Time) bool {
 	return d.GetScheduledDimModeIsActiveAt(at)
 }
 
-// GetDimModeIsActive checks if dim mode is active (dimming without full night mode).
+// GetQuietOffIsActive reports whether the effective quiet window at now uses the
+// "off" mode (display fully off). now must be in the device-local location.
+func (d Device) GetQuietOffIsActive(now time.Time) bool {
+	w := d.GetEffectiveQuietWindow(now)
+	return w != nil && w.Mode == QuietModeOff
+}
+
+// GetDimModeIsActive checks if dim mode is active. Quiet hours takes precedence.
 func (d Device) GetDimModeIsActive() bool {
 	return d.GetDimModeIsActiveAt(time.Now())
 }
@@ -1047,12 +1145,23 @@ func (d *Device) GetEffectiveDwellTime(app *App) int {
 	return d.DefaultInterval
 }
 
-// GetEffectiveBrightness calculates the effective brightness of a device, accounting for night and dim modes.
+// GetEffectiveBrightness calculates the effective brightness of a device,
+// accounting for quiet hours (highest priority) and dim mode.
 func (d *Device) GetEffectiveBrightness() int {
+	now := time.Now().In(d.GetLocation())
+	if w := d.GetEffectiveQuietWindow(now); w != nil {
+		switch w.Mode {
+		case QuietModeOff:
+			return 0
+		case QuietModeDim:
+			return int(w.Brightness)
+		case QuietModeApp:
+			return int(d.Brightness)
+		}
+	}
+
 	brightness := int(d.Brightness)
-	if d.GetNightModeIsActive() {
-		brightness = int(d.NightBrightness)
-	} else if d.GetDimModeIsActive() && d.DimBrightness != nil {
+	if d.GetDimModeIsActive() && d.DimBrightness != nil {
 		brightness = int(*d.DimBrightness)
 	}
 	return brightness

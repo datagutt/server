@@ -11,19 +11,15 @@ import (
 )
 
 type deviceModeSnapshot struct {
-	NightActive bool
+	QuietActive bool
 	DimActive   bool
-	NightFilter string
 	DimFilter   string
 }
 
 func snapshotDeviceMode(device *data.Device) deviceModeSnapshot {
 	snap := deviceModeSnapshot{
-		NightActive: device.GetNightModeIsActive(),
+		QuietActive: device.GetQuietIsActive(),
 		DimActive:   device.GetDimModeIsActive(),
-	}
-	if device.NightColorFilter != nil {
-		snap.NightFilter = string(*device.NightColorFilter)
 	}
 	if device.DimColorFilter != nil {
 		snap.DimFilter = string(*device.DimColorFilter)

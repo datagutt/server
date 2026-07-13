@@ -40,33 +40,17 @@ func TestGetEffectiveFilters_ModeFiltersOverrideApp(t *testing.T) {
 			expected: []string{"dimmed"},
 		},
 		{
-			name: "night mode filter overrides app filter",
+			name: "quiet hours suppresses dim mode filter",
 			device: data.Device{
-				NightModeEnabled: true,
-				NightStart:       "00:00",
-				NightEnd:         "23:59",
-				NightColorFilter: &redshift,
+				QuietHours:     allDayQuietWindow(data.QuietModeDim),
+				DimModeEnabled: true,
+				DimTime:        new("00:00"),
+				DimColorFilter: &dimmed,
 			},
 			app: &data.App{
 				ColorFilter: &warm,
 			},
-			expected: []string{"redshift"},
-		},
-		{
-			name: "night mode filter takes precedence over dim mode filter",
-			device: data.Device{
-				NightModeEnabled: true,
-				NightStart:       "00:00",
-				NightEnd:         "23:59",
-				NightColorFilter: &redshift,
-				DimModeEnabled:   true,
-				DimTime:          new("00:00"),
-				DimColorFilter:   &dimmed,
-			},
-			app: &data.App{
-				ColorFilter: &warm,
-			},
-			expected: []string{"redshift"},
+			expected: []string{"warm"},
 		},
 		{
 			name: "app filter used when mode filter not configured",
@@ -119,18 +103,32 @@ func TestGetEffectiveFilters_ModeOverride(t *testing.T) {
 	warm := data.ColorFilterWarm
 	dimmed := data.ColorFilterDimmed
 
+	// A manual quiet override forces quiet hours on, which suppresses the dim
+	// mode filter even though dim mode is scheduled for the whole day.
 	active := true
 	until := time.Now().Add(time.Hour)
 	device := data.Device{
-		NightModeEnabled:       true,
-		NightStart:             "22:00",
-		NightEnd:               "06:00",
-		NightColorFilter:       &dimmed,
-		NightModeOverride:      &active,
-		NightModeOverrideUntil: &until,
+		QuietHours:         data.QuietHoursConfig{Windows: []data.QuietWindow{{Enabled: true, StartHour: 22, EndHour: 6, Days: 0x7F, Mode: data.QuietModeDim}}},
+		QuietOverride:      &active,
+		QuietOverrideUntil: &until,
+		DimModeEnabled:     true,
+		DimTime:            new("00:00"),
+		DimColorFilter:     &dimmed,
 	}
 	app := &data.App{ColorFilter: &warm}
 
 	filters := s.getEffectiveFilters(&device, app)
-	assert.Equal(t, []string{"dimmed"}, filters)
+	assert.Equal(t, []string{"warm"}, filters)
+}
+
+// allDayQuietWindow returns a quiet-hours config with one window covering
+// (almost) the whole day on every day of the week.
+func allDayQuietWindow(mode data.QuietMode) data.QuietHoursConfig {
+	return data.QuietHoursConfig{Windows: []data.QuietWindow{{
+		Enabled: true,
+		EndHour: 23,
+		EndMin:  59,
+		Days:    0x7F,
+		Mode:    mode,
+	}}}
 }

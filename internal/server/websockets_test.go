@@ -79,10 +79,11 @@ func TestWebsockets_Client(t *testing.T) {
 	assert.Equal(t, http.StatusSwitchingProtocols, resp.StatusCode, "Expected status 101")
 
 	// Message Expectation Loop
-	// We expect:
-	// 1. JSON: {"dwell_secs": ...}
-	// 2. JSON: {"brightness": ...} (Optional, but likely sent on first connect)
-	// 3. Binary: Image Data
+	// We expect, in some order:
+	// - JSON: {"quiet_hours": ...} (config sync sent on connect)
+	// - JSON: {"dwell_secs": ...}
+	// - JSON: {"brightness": ...} (Optional, but likely sent on first connect)
+	// - Binary: Image Data
 
 	gotDwell := false
 	gotBrightness := false
@@ -91,7 +92,9 @@ func TestWebsockets_Client(t *testing.T) {
 	// Set read deadline
 	assert.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)), "Failed to set read deadline")
 
-	for range 3 {
+	// Read until all three expected messages have arrived, tolerating the extra
+	// connect-time config frame (and any ordering).
+	for i := 0; i < 6 && !(gotDwell && gotBrightness && gotImage); i++ {
 		msgType, msgData, err := conn.ReadMessage()
 		assert.NoError(t, err, "ReadMessage failed")
 

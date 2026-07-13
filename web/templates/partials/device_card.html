@@ -17,10 +17,10 @@
                     {{ if ne $pinnedName "" }}{{ $pinnedName }}{{ else }}{{ $pinned }}{{ end }}
                     </span>
                     {{ end }}
-                    {{ if .Item.GetNightModeIsActive }}
+                    {{ if .Item.GetQuietIsActive }}
                     <span class="night-mode-badge"
-                          title="{{ t .Localizer "Night Mode Active" }}">
-                        <i class="fa-solid fa-moon" aria-hidden="true"></i> {{ t .Localizer "Night Mode" }}
+                          title="{{ t .Localizer "Quiet Hours Active" }}">
+                        <i class="fa-solid fa-moon" aria-hidden="true"></i> {{ t .Localizer "Quiet" }}
                     </span>
                     {{ else if .Item.GetDimModeIsActive }}
                     <span class="dim-mode-badge" title="{{ t .Localizer "Dim Mode Active" }}">
@@ -99,28 +99,28 @@
                                    {{ end }}>
                         </div>
                     </div>
-                    {{ if .Item.NightModeEnabled }}
+                    {{ if .Item.HasEnabledQuietWindow }}
                     <div class="settings-field-row">
                         <div class="settings-field-label">
-                            <label for="night-mode-toggle-{{ .Item.ID }}">{{ t .Localizer "Night Mode" }}</label>
+                            <label for="quiet-toggle-{{ .Item.ID }}">{{ t .Localizer "Quiet Hours" }}</label>
                         </div>
                         <div class="settings-field-control">
                             <label class="settings-inline-option settings-toggle-row"
-                                   for="night-mode-toggle-{{ .Item.ID }}">
+                                   for="quiet-toggle-{{ .Item.ID }}">
                                 <input type="checkbox"
-                                       id="night-mode-toggle-{{ .Item.ID }}"
-                                       {{ if .Item.GetNightModeIsActive }}
+                                       id="quiet-toggle-{{ .Item.ID }}"
+                                       {{ if .Item.GetQuietIsActive }}
                                        checked
                                        {{ end }}
                                        {{ if .ReadOnly }}
                                        disabled
                                        {{ else }}
-                                       onchange="setNightModeOverride('{{ .Item.ID }}', this.checked, this)"
+                                       onchange="setQuietOverride('{{ .Item.ID }}', this.checked, this)"
                                        {{ end }}>
-                                <span>{{ t .Localizer "Night mode on" }}</span>
+                                <span>{{ t .Localizer "Quiet hours on" }}</span>
                             </label>
                             <p class="settings-caption settings-toggle-hint">
-                                {{ t .Localizer "Persists until the next scheduled night mode change." }}
+                                {{ t .Localizer "Persists until the next scheduled quiet hours change." }}
                             </p>
                         </div>
                     </div>

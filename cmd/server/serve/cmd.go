@@ -57,6 +57,9 @@ func run(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to migrate schema: %w", err)
 	}
 
+	// One-time conversion of legacy night-mode columns into quiet hours.
+	convertLegacyNightMode(cmd.Context(), db)
+
 	cache, err := initCache(cfg.RedisURL)
 	if err != nil {
 		return fmt.Errorf("failed to initialize cache: %w", err)

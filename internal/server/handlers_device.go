@@ -230,7 +230,6 @@ func (s *Server) handleCreateDevicePost(w http.ResponseWriter, r *http.Request) 
 		Notes:                 formData.Notes,
 		Brightness:            data.BrightnessFromUIScale(formData.Brightness, deviceScale),
 		CustomBrightnessScale: "",
-		NightBrightness:       0,
 		DefaultInterval:       15,
 		Location:              location,
 		LastAppIndex:          0,
@@ -305,8 +304,8 @@ func (s *Server) handleUpdateDeviceGet(w http.ResponseWriter, r *http.Request) {
 	// Calculate UI Brightness
 	bUI := device.Brightness.UIScale(customScale)
 
-	// Calculate Night Brightness UI
-	nbUI := device.NightBrightness.UIScale(customScale)
+	// Build the quiet-hours window rows for the editor
+	quietWindows := buildQuietWindowViews(device, customScale)
 
 	// Calculate Dim Brightness UI
 	dbUI := 2 // Default
@@ -358,7 +357,7 @@ func (s *Server) handleUpdateDeviceGet(w http.ResponseWriter, r *http.Request) {
 		DefaultWsURL:              defaultWsURL,
 		FirmwareImgURL:            firmwareImgURL,
 		BrightnessUI:              bUI,
-		NightBrightnessUI:         nbUI,
+		QuietWindows:              quietWindows,
 		DimBrightnessUI:           dbUI,
 		DefaultBrightnessScale:    device.Type.DefaultBrightnessScale(),
 		FirmwareAvailable:         firmwareAvailable,
@@ -446,64 +445,18 @@ func (s *Server) handleUpdateDevicePost(w http.ResponseWriter, r *http.Request) 
 		device.InterstitialApp = nil
 	}
 
-	// 5. Night Mode
+	// 5. Quiet Hours
 	modeSnapshotBefore := snapshotDeviceMode(device)
-	nightModeWasEnabled := device.NightModeEnabled
-	nightStartWas := device.NightStart
-	nightEndWas := device.NightEnd
-	device.NightModeEnabled = r.FormValue("night_mode_enabled") == "on"
-
-	nightStart := r.FormValue("night_start")
-	if nightStart != "" {
-		parsed, err := parseTimeInput(nightStart)
-		if err != nil {
-			s.flashAndRedirect(w, r, fmt.Sprintf("Invalid night start time: %v", err), fmt.Sprintf("/devices/%s/update", device.ID), http.StatusSeeOther)
-			return
-		}
-		device.NightStart = parsed
+	quietBefore, _ := json.Marshal(device.QuietHours)
+	newQuiet, err := parseQuietHoursForm(r, device, customScale)
+	if err != nil {
+		s.flashAndRedirect(w, r, err.Error(), fmt.Sprintf("/devices/%s/update", device.ID), http.StatusSeeOther)
+		return
 	}
-
-	nightEnd := r.FormValue("night_end")
-	if nightEnd != "" {
-		parsed, err := parseTimeInput(nightEnd)
-		if err != nil {
-			s.flashAndRedirect(w, r, fmt.Sprintf("Invalid night end time: %v", err), fmt.Sprintf("/devices/%s/update", device.ID), http.StatusSeeOther)
-			return
-		}
-		device.NightEnd = parsed
-	}
-
-	if nbUI, err := strconv.Atoi(r.FormValue("night_brightness")); err == nil {
-		device.NightBrightness = data.BrightnessFromUIScale(nbUI, customScale)
-	}
-
-	nightApp := r.FormValue("night_mode_app")
-	if nightApp != "None" {
-		exists := false
-		for _, app := range device.Apps {
-			if app.Iname == nightApp {
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			slog.Warn("Night mode app not found", "app", nightApp)
-		}
-		device.NightModeApp = nightApp
-	} else {
-		device.NightModeApp = ""
-	}
-
-	nightColorFilter := r.FormValue("night_color_filter")
-	if nightColorFilter != "none" {
-		val := data.ColorFilter(nightColorFilter)
-		device.NightColorFilter = &val
-	} else {
-		device.NightColorFilter = nil
-	}
-
-	if !device.NightModeEnabled || nightModeWasEnabled != device.NightModeEnabled || nightStartWas != device.NightStart || nightEndWas != device.NightEnd {
-		clearNightModeOverride(device)
+	device.QuietHours = newQuiet
+	quietAfter, _ := json.Marshal(device.QuietHours)
+	if !device.HasEnabledQuietWindow() || string(quietBefore) != string(quietAfter) {
+		clearQuietOverride(device)
 	}
 
 	// 6. Dim Mode
@@ -622,6 +575,17 @@ func (s *Server) handleUpdateDevicePost(w http.ResponseWriter, r *http.Request) 
 		slog.Error("Failed to update device", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
+	}
+
+	// Push the new quiet schedule to a connected device so its local blanking
+	// engine tracks edits without waiting for a reconnect. Only sent when the
+	// schedule actually changed to avoid noise on unrelated setting saves.
+	if string(quietBefore) != string(quietAfter) {
+		if payload, err := buildQuietHoursCommand(device); err != nil {
+			slog.Error("Failed to build quiet-hours command", "device", device.ID, "error", err)
+		} else {
+			s.Broadcaster.Notify(device.ID, DeviceCommandMessage{Payload: payload})
+		}
 	}
 
 	user := GetUser(r)
@@ -765,11 +729,9 @@ func (s *Server) handleImportDeviceConfig(w http.ResponseWriter, r *http.Request
 		device.Notes = importedDevice.Notes
 		device.Brightness = importedDevice.Brightness
 		device.CustomBrightnessScale = importedDevice.CustomBrightnessScale
-		device.NightModeEnabled = importedDevice.NightModeEnabled
-		device.NightModeApp = importedDevice.NightModeApp
-		device.NightStart = importedDevice.NightStart
-		device.NightEnd = importedDevice.NightEnd
-		device.NightBrightness = importedDevice.NightBrightness
+		device.QuietHours = importedDevice.QuietHours
+		device.QuietOverride = importedDevice.QuietOverride
+		device.QuietOverrideUntil = importedDevice.QuietOverrideUntil
 		device.DimTime = importedDevice.DimTime
 		device.DimBrightness = importedDevice.DimBrightness
 		device.DefaultInterval = importedDevice.DefaultInterval
@@ -783,7 +745,6 @@ func (s *Server) handleImportDeviceConfig(w http.ResponseWriter, r *http.Request
 		device.LastSeen = importedDevice.LastSeen
 		device.Info = importedDevice.Info
 		device.ColorFilter = importedDevice.ColorFilter
-		device.NightColorFilter = importedDevice.NightColorFilter
 		device.DimColorFilter = importedDevice.DimColorFilter
 		device.SwapColors = importedDevice.SwapColors
 		device.RequireAPIKey = importedDevice.RequireAPIKey
@@ -898,8 +859,8 @@ func (s *Server) handleUpdateInterval(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) handleSetNightModeOverride(w http.ResponseWriter, r *http.Request) {
-	s.setModeOverride(w, r, "night")
+func (s *Server) handleSetQuietOverride(w http.ResponseWriter, r *http.Request) {
+	s.setModeOverride(w, r, "quiet")
 }
 
 func (s *Server) handleSetDimModeOverride(w http.ResponseWriter, r *http.Request) {
@@ -923,10 +884,10 @@ func (s *Server) setModeOverride(w http.ResponseWriter, r *http.Request, mode st
 	var displayMode string
 
 	switch mode {
-	case "night":
-		enabled = device.NightModeEnabled
-		wsPrefix = "nightMode"
-		displayMode = "Night"
+	case "quiet":
+		enabled = device.HasEnabledQuietWindow()
+		wsPrefix = "quietMode"
+		displayMode = "Quiet"
 	case "dim":
 		enabled = device.DimModeEnabled
 		wsPrefix = "dimMode"
@@ -942,11 +903,11 @@ func (s *Server) setModeOverride(w http.ResponseWriter, r *http.Request, mode st
 	}
 
 	switch mode {
-	case "night":
-		overrideUntil, err = setNightModeOverride(device, active)
+	case "quiet":
+		overrideUntil, err = setQuietOverride(device, active)
 		updates = map[string]any{
-			"night_mode_override":       device.NightModeOverride,
-			"night_mode_override_until": device.NightModeOverrideUntil,
+			"quiet_override":       device.QuietOverride,
+			"quiet_override_until": device.QuietOverrideUntil,
 		}
 	case "dim":
 		overrideUntil, err = setDimModeOverride(device, active)
@@ -1213,4 +1174,176 @@ func (s *Server) handleUpdateFirmwareSettings(w http.ResponseWriter, r *http.Req
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// maxQuietWindows is the number of quiet-hours windows the editor exposes. It
+// matches the device firmware's window count so both sides share one model.
+const maxQuietWindows = 4
+
+// clockFromHM formats an hour/minute pair as "HH:MM".
+func clockFromHM(hour, minute uint8) string {
+	return fmt.Sprintf("%02d:%02d", hour, minute)
+}
+
+// parseHM parses a normalized "HH:MM" string into hour/minute components.
+func parseHM(value string) (uint8, uint8, error) {
+	parts := strings.Split(value, ":")
+	if len(parts) != 2 {
+		return 0, 0, fmt.Errorf("invalid time format: %s", value)
+	}
+	hour, err := strconv.Atoi(parts[0])
+	if err != nil || hour < 0 || hour > 23 {
+		return 0, 0, fmt.Errorf("invalid hour: %s", value)
+	}
+	minute, err := strconv.Atoi(parts[1])
+	if err != nil || minute < 0 || minute > 59 {
+		return 0, 0, fmt.Errorf("invalid minute: %s", value)
+	}
+	return uint8(hour), uint8(minute), nil
+}
+
+// buildQuietWindowViews expands the device's stored quiet windows into a fixed
+// set of editor rows, padding missing slots with sensible defaults.
+func buildQuietWindowViews(device *data.Device, customScale map[int]int) []QuietWindowView {
+	views := make([]QuietWindowView, maxQuietWindows)
+	for i := 0; i < maxQuietWindows; i++ {
+		view := QuietWindowView{
+			Index:        i,
+			Start:        "22:00",
+			End:          "06:00",
+			Days:         0x7F,
+			Mode:         string(data.QuietModeDim),
+			BrightnessUI: 0,
+		}
+		if i < len(device.QuietHours.Windows) {
+			w := device.QuietHours.Windows[i]
+			view.Enabled = w.Enabled
+			view.Start = clockFromHM(w.StartHour, w.StartMin)
+			view.End = clockFromHM(w.EndHour, w.EndMin)
+			view.Days = w.Days
+			mode := string(w.Mode)
+			if mode == "" {
+				mode = string(data.QuietModeDim)
+			}
+			view.Mode = mode
+			view.BrightnessUI = w.Brightness.UIScale(customScale)
+			view.AppIname = w.AppIname
+		}
+		views[i] = view
+	}
+	return views
+}
+
+// parseQuietHoursForm reads the multi-window quiet-hours editor fields into a
+// QuietHoursConfig. Windows without a valid start/end pair are skipped.
+func parseQuietHoursForm(r *http.Request, device *data.Device, customScale map[int]int) (data.QuietHoursConfig, error) {
+	var cfg data.QuietHoursConfig
+	for i := 0; i < maxQuietWindows; i++ {
+		startRaw := r.FormValue(fmt.Sprintf("qh_start_%d", i))
+		endRaw := r.FormValue(fmt.Sprintf("qh_end_%d", i))
+		if strings.TrimSpace(startRaw) == "" || strings.TrimSpace(endRaw) == "" {
+			continue
+		}
+
+		startNorm, err := parseTimeInput(startRaw)
+		if err != nil {
+			return cfg, fmt.Errorf("invalid quiet hours start time (window %d): %v", i+1, err)
+		}
+		endNorm, err := parseTimeInput(endRaw)
+		if err != nil {
+			return cfg, fmt.Errorf("invalid quiet hours end time (window %d): %v", i+1, err)
+		}
+		sh, sm, err := parseHM(startNorm)
+		if err != nil {
+			return cfg, fmt.Errorf("invalid quiet hours start time (window %d): %v", i+1, err)
+		}
+		eh, em, err := parseHM(endNorm)
+		if err != nil {
+			return cfg, fmt.Errorf("invalid quiet hours end time (window %d): %v", i+1, err)
+		}
+
+		var days uint8
+		for d := 0; d < 7; d++ {
+			if r.FormValue(fmt.Sprintf("qh_day_%d_%d", i, d)) == "on" {
+				days |= uint8(1) << uint(d)
+			}
+		}
+
+		mode := data.QuietMode(r.FormValue(fmt.Sprintf("qh_mode_%d", i)))
+		switch mode {
+		case data.QuietModeOff, data.QuietModeDim, data.QuietModeApp:
+		default:
+			mode = data.QuietModeDim
+		}
+
+		window := data.QuietWindow{
+			Enabled:   r.FormValue(fmt.Sprintf("qh_enabled_%d", i)) == "on",
+			StartHour: sh,
+			StartMin:  sm,
+			EndHour:   eh,
+			EndMin:    em,
+			Days:      days,
+			Mode:      mode,
+		}
+
+		if mode == data.QuietModeDim {
+			if bUI, err := strconv.Atoi(r.FormValue(fmt.Sprintf("qh_brightness_%d", i))); err == nil {
+				window.Brightness = data.BrightnessFromUIScale(bUI, customScale)
+			}
+		}
+
+		if mode == data.QuietModeApp {
+			appIname := r.FormValue(fmt.Sprintf("qh_app_%d", i))
+			if appIname != "" && appIname != "None" {
+				if device.GetApp(appIname) == nil {
+					slog.Warn("Quiet hours app not found", "app", appIname, "device", device.ID)
+				}
+				window.AppIname = appIname
+			}
+		}
+
+		cfg.Windows = append(cfg.Windows, window)
+	}
+	return cfg, nil
+}
+
+// quietHoursWireWindow is the window shape the device firmware's local quiet
+// engine understands. The firmware only blanks the display, so it reads just the
+// schedule fields (no mode/brightness/app).
+type quietHoursWireWindow struct {
+	Enabled   bool  `json:"enabled"`
+	StartHour uint8 `json:"start_hour"`
+	StartMin  uint8 `json:"start_min"`
+	EndHour   uint8 `json:"end_hour"`
+	EndMin    uint8 `json:"end_min"`
+	Days      uint8 `json:"days"`
+}
+
+// buildQuietHoursCommand marshals the device's quiet schedule into the WebSocket
+// config envelope the firmware parses ({"quiet_hours":{"windows":[...]}}).
+//
+// Only "off" windows are sent. The firmware's local engine blanks the display
+// for every window it receives, which matches the "off" mode exactly; "dim" and
+// "app" windows keep the display on and are realized server-side (brightness and
+// app selection in the delivered image stream), so mirroring them to the device
+// blanking engine would wrongly black out the panel. An empty windows array is a
+// valid message that clears the device's local schedule.
+func buildQuietHoursCommand(device *data.Device) ([]byte, error) {
+	windows := make([]quietHoursWireWindow, 0, len(device.QuietHours.Windows))
+	for _, w := range device.QuietHours.Windows {
+		if w.Mode != data.QuietModeOff {
+			continue
+		}
+		windows = append(windows, quietHoursWireWindow{
+			Enabled:   w.Enabled,
+			StartHour: w.StartHour,
+			StartMin:  w.StartMin,
+			EndHour:   w.EndHour,
+			EndMin:    w.EndMin,
+			Days:      w.Days,
+		})
+	}
+	return json.Marshal(map[string]any{
+		"quiet_hours": map[string]any{"windows": windows},
+	})
 }
