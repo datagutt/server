@@ -1,0 +1,23 @@
+internal/data/models.go
+  s_a52d19f909d07f::t_50490335f1e6c6 631-632,634-635,639,641,649
+internal/server/handlers_device.go
+  s_a52d19f909d07f::t_49d508b04a1de3 1167,1199,1224
+internal/server/websockets_test.go
+  s_a52d19f909d07f::t_4541431b52f671 97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "e5316418f65d29df460887d0a5f89bcca75ba0c7",
+  "prompts": {},
+  "sessions": {
+    "s_a52d19f909d07f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78c01a48-8b6e-4f0e-8f01-d8ccbbbb3325",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Thomas Lekanger <thomas.lekanger@hotmail.com>"
+    }
+  }
+}
