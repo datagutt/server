@@ -1206,7 +1206,7 @@ func parseHM(value string) (uint8, uint8, error) {
 // set of editor rows, padding missing slots with sensible defaults.
 func buildQuietWindowViews(device *data.Device, customScale map[int]int) []QuietWindowView {
 	views := make([]QuietWindowView, maxQuietWindows)
-	for i := 0; i < maxQuietWindows; i++ {
+	for i := range maxQuietWindows {
 		view := QuietWindowView{
 			Index:        i,
 			Start:        "22:00",
@@ -1238,7 +1238,7 @@ func buildQuietWindowViews(device *data.Device, customScale map[int]int) []Quiet
 // QuietHoursConfig. Windows without a valid start/end pair are skipped.
 func parseQuietHoursForm(r *http.Request, device *data.Device, customScale map[int]int) (data.QuietHoursConfig, error) {
 	var cfg data.QuietHoursConfig
-	for i := 0; i < maxQuietWindows; i++ {
+	for i := range maxQuietWindows {
 		startRaw := r.FormValue(fmt.Sprintf("qh_start_%d", i))
 		endRaw := r.FormValue(fmt.Sprintf("qh_end_%d", i))
 		if strings.TrimSpace(startRaw) == "" || strings.TrimSpace(endRaw) == "" {
@@ -1263,7 +1263,7 @@ func parseQuietHoursForm(r *http.Request, device *data.Device, customScale map[i
 		}
 
 		var days uint8
-		for d := 0; d < 7; d++ {
+		for d := range 7 {
 			if r.FormValue(fmt.Sprintf("qh_day_%d_%d", i, d)) == "on" {
 				days |= uint8(1) << uint(d)
 			}

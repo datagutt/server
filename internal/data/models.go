@@ -681,17 +681,17 @@ type App struct {
 }
 
 type Device struct {
-	ID                    string           `gorm:"primaryKey"                          json:"id"` // 8-char hex
-	Username              string           `gorm:"index"                               json:"username"`
+	ID                    string           `gorm:"primaryKey"                        json:"id"` // 8-char hex
+	Username              string           `gorm:"index"                             json:"username"`
 	Name                  string           `json:"name"`
-	Type                  DeviceType       `gorm:"type:text"                           json:"type"`
-	APIKey                string           `gorm:"uniqueIndex"                         json:"api_key"`
+	Type                  DeviceType       `gorm:"type:text"                         json:"type"`
+	APIKey                string           `gorm:"uniqueIndex"                       json:"api_key"`
 	ImgURL                string           `json:"img_url"`
 	WsURL                 string           `json:"ws_url"`
 	Notes                 string           `json:"notes"`
-	Brightness            Brightness       `gorm:"default:20"                          json:"brightness"` // 0-100
+	Brightness            Brightness       `gorm:"default:20"                        json:"brightness"` // 0-100
 	CustomBrightnessScale string           `json:"custom_brightness_scale"`
-	QuietHours            QuietHoursConfig `gorm:"type:text" json:"quiet_hours"`
+	QuietHours            QuietHoursConfig `gorm:"type:text"                         json:"quiet_hours"`
 	QuietOverride         *bool            `json:"quiet_override,omitempty"`
 	QuietOverrideUntil    *time.Time       `json:"quiet_override_until,omitempty"`
 	DimModeEnabled        bool             `json:"dim_mode_enabled"`
@@ -699,7 +699,7 @@ type Device struct {
 	DimModeOverrideUntil  *time.Time       `json:"dim_mode_override_until,omitempty"`
 	DimTime               *string          `json:"dim_time"`
 	DimBrightness         *Brightness      `json:"dim_brightness"`
-	DefaultInterval       int              `gorm:"default:15"                          json:"default_interval"`
+	DefaultInterval       int              `gorm:"default:15"                        json:"default_interval"`
 
 	Timezone *string `json:"timezone"`
 	Locale   *string `json:"locale"`

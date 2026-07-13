@@ -94,7 +94,7 @@ func TestWebsockets_Client(t *testing.T) {
 
 	// Read until all three expected messages have arrived, tolerating the extra
 	// connect-time config frame (and any ordering).
-	for i := 0; i < 6 && !(gotDwell && gotBrightness && gotImage); i++ {
+	for i := 0; i < 6 && (!gotDwell || !gotBrightness || !gotImage); i++ {
 		msgType, msgData, err := conn.ReadMessage()
 		assert.NoError(t, err, "ReadMessage failed")
 
