@@ -1,0 +1,20 @@
+internal/server/handlers_device_api.go
+  s_a52d19f909d07f::t_a3533a5a54bba5 153-163
+  s_a52d19f909d07f::t_c9dc6575ebc7c2 4-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "d88eebc10c3fb59b7b7d5b9485093a2356a326c9",
+  "prompts": {},
+  "sessions": {
+    "s_a52d19f909d07f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78c01a48-8b6e-4f0e-8f01-d8ccbbbb3325",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Thomas Lekanger <thomas.lekanger@hotmail.com>"
+    }
+  }
+}
