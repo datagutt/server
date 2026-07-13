@@ -1,0 +1,113 @@
+internal/server/server.go
+  s_a92a4ecce435bb::t_023a3a0e937938 298
+web/templates/manager/update.html
+  s_a52d19f909d07f::t_cb382fe6063cbc 324,326,328-330,333,337-339,344,348-350,356,360-362,364,368-376,381,384-401,406,408,411-414,417-419,423
+  s_a52d19f909d07f::t_18e2bb35533d08 17-24,27-31
+  s_a52d19f909d07f::t_68a2114bcf05cb 32
+internal/server/handlers_app.go
+  s_a92a4ecce435bb::t_b75b8d75b27125 806-815
+internal/server/funcmap.go
+  s_a52d19f909d07f::t_8ea97dbc5ed773 41,52-58
+  s_a92a4ecce435bb::t_1e24cc21254387 40,45-51
+  s_a52d19f909d07f::t_9203d9ded1d8c5 59
+internal/migration/migration_test.go
+  s_a92a4ecce435bb::t_c36f059d9e8b53 18
+  s_a92a4ecce435bb::t_cb5abaaac5405b 112-122
+web/static/js/manager.js
+  s_a52d19f909d07f::t_eb8f4c0a5f8799 105,113,123,133
+internal/server/helpers.go
+  s_a92a4ecce435bb::t_f3930f178827e5 51-65
+  s_a92a4ecce435bb::t_79fb6154b6c3fe 112
+internal/server/handlers_device.go
+  s_a52d19f909d07f::t_b6e557d7654e4b 1267-1307
+  s_a92a4ecce435bb::t_3fd4c5c42c42d7 357
+  s_a92a4ecce435bb::t_36eb8775d281a7 868-871
+  s_a52d19f909d07f::t_e30e53e8860f23 578-588
+  s_a92a4ecce435bb::t_c5cbf24687a3cd 447-452,454-457
+  s_a92a4ecce435bb::t_017d365a88022f 308-309
+  s_a92a4ecce435bb::t_919873320c5379 1136-1266
+  s_a92a4ecce435bb::t_ba41d67e0d2dd0 844-845
+  s_a92a4ecce435bb::t_7afe0be6286af4 729-731
+  s_a92a4ecce435bb::t_6b1ba7327f1224 887-888,890-891
+internal/data/models_test.go
+  s_a92a4ecce435bb::t_7c1fb65984975c 11-27,29-35,37-39,42-70,72-84,86-90,93-104,106-113,115-120
+internal/server/handlers_api_test.go
+  s_a92a4ecce435bb::t_775598540fbcba 746,753-759,763,773-774,778-780
+internal/server/rotation_test.go
+  s_a92a4ecce435bb::t_064c822484f8d3 170,182,184-188
+  s_a52d19f909d07f::t_df36ce01c1d9cc 206
+  s_a92a4ecce435bb::t_ea702e107bbd8e 113,123-124,126-128
+  s_a92a4ecce435bb::t_15523bae8b10e9 17-35,45,47-49,68,72,78
+  s_a52d19f909d07f::t_32221903ea1ebf 224,230,233-234,237,240
+internal/server/websockets.go
+  s_a52d19f909d07f::t_d06d335497a40e 107-115
+internal/server/websockets_test.go
+  s_a52d19f909d07f::t_717a6f1cd4bec8 82-86,95-97
+internal/legacy/converter.go
+  s_a92a4ecce435bb::t_ec757e93dca081 126-128
+  s_a92a4ecce435bb::t_423115037dc469 257-305
+internal/server/handlers_api.go
+  s_a92a4ecce435bb::t_7c9fac1553e4ce 673-675,677-678
+  s_a92a4ecce435bb::t_078b6ca7bbaba2 27-34
+  s_a92a4ecce435bb::t_a3df5aaf241842 147-150
+  s_a92a4ecce435bb::t_352780379dc44b 129-132
+  s_a92a4ecce435bb::t_0c61950c2ebce4 642,648-649
+  s_a92a4ecce435bb::t_d722341afadf00 43-50,53-57
+  s_a92a4ecce435bb::t_1f8cb18b35aca3 39-42
+internal/data/models.go
+  s_a92a4ecce435bb::t_8b004e629c6e98 919
+  s_a92a4ecce435bb::t_4fb8c75e2b5e30 991-993,995-996,998,1001-1008,1014
+  s_a92a4ecce435bb::t_1c4d40c8b0b153 641-644
+  s_a92a4ecce435bb::t_281785bb7ae473 801-806,809-813,816-822,825-828,830-833,836-843,845-846,848-853,855-871,874-875,877-880,882-884,886-900,903-906,908
+  s_a92a4ecce435bb::t_c196ca96e1bd08 1031-1032,1034-1045,1047
+  s_a92a4ecce435bb::t_35d54f42d4d0b3 668-669
+  s_a92a4ecce435bb::t_6935a24d37bf42 368-427
+  s_a92a4ecce435bb::t_d818432db5172c 631-640,645-649
+internal/server/handlers_device_api.go
+  s_a92a4ecce435bb::t_8252e96340faf4 143-147
+cmd/server/serve/data.go
+  s_a92a4ecce435bb::t_13bdc9c441b20d 9-11
+  s_a92a4ecce435bb::t_d221f97328a87c 77-168
+internal/server/handlers_device_test.go
+  s_a92a4ecce435bb::t_5f72e967e4d0a6 290,296-305,312,320,327-330
+internal/server/render_utils.go
+  s_a92a4ecce435bb::t_57362a87f9b44d 259
+cmd/server/serve/cmd.go
+  s_a92a4ecce435bb::t_b027dab15d164d 60-62
+internal/server/rotation.go
+  s_a92a4ecce435bb::t_0a98d1a786f89d 209-211,213,215,221,224-225
+internal/server/quiet_hours.go
+  s_a92a4ecce435bb::t_d3dbfe2cd4f441 20-43
+internal/server/handlers_app_test.go
+  s_a92a4ecce435bb::t_095db687f8f0aa 537,540,543-554,565,568-569,589,591-592
+web/templates/partials/device_card.html
+  s_a52d19f909d07f::t_23af1ea0efb3c6 20,22-23
+  s_a52d19f909d07f::t_11b32214c2231e 102,105,109,111-112,118,120,123
+internal/legacy/reader.go
+  s_a92a4ecce435bb::t_e5c31681fec596 35-42
+  s_a92a4ecce435bb::t_6fe185be445b3a 26-34,43-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "72d4092cadfdea2680f9deb7aef9a03bfdef6870",
+  "prompts": {},
+  "sessions": {
+    "s_a52d19f909d07f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78c01a48-8b6e-4f0e-8f01-d8ccbbbb3325",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Thomas Lekanger <thomas.lekanger@hotmail.com>"
+    },
+    "s_a92a4ecce435bb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a6bab216-8550-4dc3-9978-2748ef1f0ce4",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Thomas Lekanger <thomas.lekanger@hotmail.com>"
+    }
+  }
+}
