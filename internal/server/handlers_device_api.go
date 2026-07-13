@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -136,6 +138,17 @@ func (s *Server) handleNextApp(w http.ResponseWriter, r *http.Request) {
 
 	dwell := device.GetEffectiveDwellTime(app)
 	w.Header().Set("Tronbyt-Dwell-Secs", fmt.Sprintf("%d", dwell))
+
+	// Strong ETag over the payload lets the device answer with
+	// If-None-Match and skip the download and re-decode of an unchanged
+	// image. All Tronbyt headers above are still delivered on the 304.
+	sum := sha256.Sum256(imgData)
+	etag := `"` + hex.EncodeToString(sum[:16]) + `"`
+	w.Header().Set("ETag", etag)
+	if r.Header.Get("If-None-Match") == etag {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
 
 	if _, err := w.Write(imgData); err != nil {
 		slog.Error("Failed to write image data to response", "error", err)
