@@ -415,13 +415,41 @@
                     <div class="settings-field-row">
                         <div class="settings-field-label">{{ t $.Localizer "Days" }}</div>
                         <div class="settings-field-control quiet-days">
-                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_0" {{ if bitSet $w.Days 0 }}checked{{ end }}> {{ t $.Localizer "Sun" }}</label>
-                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_1" {{ if bitSet $w.Days 1 }}checked{{ end }}> {{ t $.Localizer "Mon" }}</label>
-                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_2" {{ if bitSet $w.Days 2 }}checked{{ end }}> {{ t $.Localizer "Tue" }}</label>
-                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_3" {{ if bitSet $w.Days 3 }}checked{{ end }}> {{ t $.Localizer "Wed" }}</label>
-                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_4" {{ if bitSet $w.Days 4 }}checked{{ end }}> {{ t $.Localizer "Thu" }}</label>
-                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_5" {{ if bitSet $w.Days 5 }}checked{{ end }}> {{ t $.Localizer "Fri" }}</label>
-                            <label class="settings-inline-option"><input type="checkbox" name="qh_day_{{ $w.Index }}_6" {{ if bitSet $w.Days 6 }}checked{{ end }}> {{ t $.Localizer "Sat" }}</label>
+                            <label class="settings-inline-option">
+                                <input type="checkbox"
+                                       name="qh_day_{{ $w.Index }}_0"
+                                       {{ if bitSet $w.Days 0 }}checked{{ end }}> {{ t $.Localizer "Sun" }}
+                            </label>
+                            <label class="settings-inline-option">
+                                <input type="checkbox"
+                                       name="qh_day_{{ $w.Index }}_1"
+                                       {{ if bitSet $w.Days 1 }}checked{{ end }}> {{ t $.Localizer "Mon" }}
+                            </label>
+                            <label class="settings-inline-option">
+                                <input type="checkbox"
+                                       name="qh_day_{{ $w.Index }}_2"
+                                       {{ if bitSet $w.Days 2 }}checked{{ end }}> {{ t $.Localizer "Tue" }}
+                            </label>
+                            <label class="settings-inline-option">
+                                <input type="checkbox"
+                                       name="qh_day_{{ $w.Index }}_3"
+                                       {{ if bitSet $w.Days 3 }}checked{{ end }}> {{ t $.Localizer "Wed" }}
+                            </label>
+                            <label class="settings-inline-option">
+                                <input type="checkbox"
+                                       name="qh_day_{{ $w.Index }}_4"
+                                       {{ if bitSet $w.Days 4 }}checked{{ end }}> {{ t $.Localizer "Thu" }}
+                            </label>
+                            <label class="settings-inline-option">
+                                <input type="checkbox"
+                                       name="qh_day_{{ $w.Index }}_5"
+                                       {{ if bitSet $w.Days 5 }}checked{{ end }}> {{ t $.Localizer "Fri" }}
+                            </label>
+                            <label class="settings-inline-option">
+                                <input type="checkbox"
+                                       name="qh_day_{{ $w.Index }}_6"
+                                       {{ if bitSet $w.Days 6 }}checked{{ end }}> {{ t $.Localizer "Sat" }}
+                            </label>
                         </div>
                     </div>
                     <div class="settings-field-row">
@@ -433,9 +461,12 @@
                                     id="qh_mode_{{ $w.Index }}"
                                     class="settings-input"
                                     onchange="updateQuietWindowMode('{{ $w.Index }}')">
-                                <option value="off" {{ if eq $w.Mode "off" }}selected{{ end }}>{{ t $.Localizer "Turn display off" }}</option>
-                                <option value="dim" {{ if eq $w.Mode "dim" }}selected{{ end }}>{{ t $.Localizer "Dim brightness" }}</option>
-                                <option value="app" {{ if eq $w.Mode "app" }}selected{{ end }}>{{ t $.Localizer "Show a specific app" }}</option>
+                                <option value="off" {{ if eq $w.Mode "off" }}selected{{ end }}>{{ t $.Localizer "Turn display off" }}
+                                </option>
+                                <option value="dim" {{ if eq $w.Mode "dim" }}selected{{ end }}>{{ t $.Localizer "Dim brightness" }}
+                                </option>
+                                <option value="app" {{ if eq $w.Mode "app" }}selected{{ end }}>{{ t $.Localizer "Show a specific app" }}
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -444,9 +475,12 @@
                             <label for="qh_brightness_{{ $w.Index }}">{{ t $.Localizer "Brightness" }}</label>
                         </div>
                         <div class="settings-field-control">
-                            <select name="qh_brightness_{{ $w.Index }}" id="qh_brightness_{{ $w.Index }}" class="settings-input">
+                            <select name="qh_brightness_{{ $w.Index }}"
+                                    id="qh_brightness_{{ $w.Index }}"
+                                    class="settings-input">
                                 {{ range seq 0 5 }}
-                                <option value="{{ . }}" {{ if eq $w.BrightnessUI . }}selected{{ end }}>{{ . }}</option>
+                                <option value="{{ . }}" {{ if eq $w.BrightnessUI . }}selected{{ end }}>{{ . }}
+                                </option>
                                 {{ end }}
                             </select>
                         </div>
@@ -456,10 +490,13 @@
                             <label for="qh_app_{{ $w.Index }}">{{ t $.Localizer "App" }}</label>
                         </div>
                         <div class="settings-field-control">
-                            <select name="qh_app_{{ $w.Index }}" id="qh_app_{{ $w.Index }}" class="settings-input">
+                            <select name="qh_app_{{ $w.Index }}"
+                                    id="qh_app_{{ $w.Index }}"
+                                    class="settings-input">
                                 <option value="None">{{ t $.Localizer "None" }}</option>
                                 {{ range $.Device.Apps }}
-                                <option value="{{ .Iname }}" {{ if eq $w.AppIname .Iname }}selected{{ end }}>{{ .Iname }} {{ .Name }}</option>
+                                <option value="{{ .Iname }}" {{ if eq $w.AppIname .Iname }}selected{{ end }}>{{ .Iname }} {{ .Name }}
+                                </option>
                                 {{ end }}
                             </select>
                             <p class="settings-help">
