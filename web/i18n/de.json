@@ -2174,6 +2174,9 @@
   "Not connected": {
     "other": "Nicht verbunden"
   },
+  "Connected": {
+    "other": "Verbunden"
+  },
   "Disconnect": {
     "other": "Trennen"
   },
