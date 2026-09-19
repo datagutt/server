@@ -35,14 +35,25 @@ Returns all devices accessible to the authenticated API key.
       "notes": "",
       "intervalSec": 30,
       "brightness": 100,
-      "nightMode": {
-        "enabled": false,
-        "app": "",
-        "startTime": "",
-        "endTime": "",
-        "brightness": 0
+      "quietHours": {
+        "active": false,
+        "windows": [
+          {
+            "enabled": true,
+            "start_hour": 22,
+            "start_min": 0,
+            "end_hour": 6,
+            "end_min": 30,
+            "days": 127,
+            "mode": "dim",
+            "brightness": 10,
+            "app_iname": ""
+          }
+        ]
       },
       "dimMode": {
+        "enabled": false,
+        "active": false,
         "startTime": null,
         "brightness": null
       },
@@ -57,8 +68,7 @@ Returns all devices accessible to the authenticated API key.
         "firmwareType": "gen1",
         "protocolVersion": 1,
         "macAddress": "aa:bb:cc:dd:ee:ff"
-      },
-      "autoDim": false
+      }
     }
   ]
 }
@@ -86,18 +96,44 @@ Update device settings. All fields are optional.
 {
   "brightness": 80,
   "intervalSec": 60,
-  "nightModeEnabled": true,
-  "nightModeApp": "clock",
-  "nightModeBrightness": 10,
-  "nightModeStartTime": "22:00",
-  "nightModeEndTime": "07:00",
+  "quietHours": {
+    "windows": [
+      {
+        "enabled": true,
+        "start_hour": 22,
+        "start_min": 0,
+        "end_hour": 7,
+        "end_min": 0,
+        "days": 62,
+        "mode": "app",
+        "app_iname": "clock"
+      }
+    ]
+  },
+  "quietActive": true,
   "dimModeStartTime": "20:00",
   "dimModeBrightness": 30,
+  "dimModeActive": false,
   "pinnedApp": "weather"
 }
 ```
 
 **Response:** Updated device payload (same shape as GET).
+
+#### Quiet hours
+
+`quietHours.windows` replaces the whole schedule. A device has up to four windows, and the first active window wins. Each window has these fields:
+
+| Field | Description |
+|-------|-------------|
+| `enabled` | Whether the window is used. |
+| `start_hour`, `start_min`, `end_hour`, `end_min` | Local device time. An end earlier than or equal to the start wraps past midnight; an end equal to the start is never active. |
+| `days` | Weekday bitmask, bit 0 = Sunday through bit 6 = Saturday (`127` = every day). The morning part of an overnight window belongs to the day it started. |
+| `mode` | `off` turns the display off, `dim` uses `brightness`, `app` shows `app_iname`. |
+| `brightness` | Brightness (0-100) for `dim` windows. |
+| `app_iname` | Installation ID shown during `app` windows. |
+
+`quietActive: false` suspends quiet hours until the next window start or end. `quietActive: true` keeps the schedule in effect and only changes the reported `active` flag; it does not start a window early. `dimModeActive` forces dim mode on or off until its next scheduled change. Changing the schedule clears any override. Quiet hours take precedence over dim mode.
 
 ### Reboot Device
 

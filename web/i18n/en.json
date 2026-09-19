@@ -281,12 +281,6 @@
   "Invalid custom brightness scale format. Use 6 comma-separated values (0-100).": {
     "other": "Invalid custom brightness scale format. Use 6 comma-separated values (0-100)."
   },
-  "Invalid night start time: {error}": {
-    "other": "Invalid night start time: {error}"
-  },
-  "Invalid night end time: {error}": {
-    "other": "Invalid night end time: {error}"
-  },
   "Invalid dim time: {error}": {
     "other": "Invalid dim time: {error}"
   },
@@ -755,11 +749,8 @@
   "Scheduled Behavior": {
     "other": "Scheduled Behavior"
   },
-  "Night mode switches the device into its nighttime state during the scheduled window. It can use a different brightness, color filter, and optional dedicated app.": {
-    "other": "Night mode switches the device into its nighttime state during the scheduled window. It can use a different brightness, color filter, and optional dedicated app."
-  },
-  "Dim mode lowers brightness before or after the full night mode window. Use it when you want the device to stay visible but less bright.": {
-    "other": "Dim mode lowers brightness before or after the full night mode window. Use it when you want the device to stay visible but less bright."
+  "Dim mode lowers brightness from its start time until 6:00 AM. Use it when you want the device to stay visible but less bright. Active quiet hours take precedence.": {
+    "other": "Dim mode lowers brightness from its start time until 6:00 AM. Use it when you want the device to stay visible but less bright. Active quiet hours take precedence."
   },
   "Enable Dim Mode": {
     "other": "Enable Dim Mode"
@@ -865,12 +856,6 @@
   },
   "Device Info and Controls": {
     "other": "Device Info and Controls"
-  },
-  "Night mode on": {
-    "other": "Night mode on"
-  },
-  "Persists until the next scheduled night mode change.": {
-    "other": "Persists until the next scheduled night mode change."
   },
   "Account": {
     "other": "Account"
@@ -1529,42 +1514,6 @@
   "The interstitial app will display even if it is disabled in the regular rotation.": {
     "other": "The interstitial app will display even if it is disabled in the regular rotation."
   },
-  "Night Mode Settings": {
-    "other": "Night Mode Settings"
-  },
-  "Enable Night Mode": {
-    "other": "Enable Night Mode"
-  },
-  "Night Mode Configuration": {
-    "other": "Night Mode Configuration"
-  },
-  "Night Mode Active": {
-    "other": "Night Mode Active"
-  },
-  "Night Mode": {
-    "other": "Night Mode"
-  },
-  "Night Start Time": {
-    "other": "Night Start Time"
-  },
-  "Night End Time": {
-    "other": "Night End Time"
-  },
-  "Night Brightness": {
-    "other": "Night Brightness"
-  },
-  "Night Mode App": {
-    "other": "Night Mode App"
-  },
-  "To prevent the night mode app from displaying during the day, set it to disabled on the app edit page.": {
-    "other": "To prevent the night mode app from displaying during the day, set it to disabled on the app edit page."
-  },
-  "Night Color Filter": {
-    "other": "Night Color Filter"
-  },
-  "Apply custom filters to the image during night mode.": {
-    "other": "Apply custom filters to the image during night mode."
-  },
   "Dim Mode Settings": {
     "other": "Dim Mode Settings"
   },
@@ -1576,9 +1525,6 @@
   },
   "Dim Start Time": {
     "other": "Dim Start Time"
-  },
-  "Leave empty to disable dim mode. Dim mode ends at Night End Time (if set) or 6:00 AM by default.": {
-    "other": "Leave empty to disable dim mode. Dim mode ends at Night End Time (if set) or 6:00 AM by default."
   },
   "Dim Brightness": {
     "other": "Dim Brightness"
@@ -2123,8 +2069,8 @@
   "Enable dim Mode": {
     "other": "Enable dim Mode"
   },
-  "Dim mode ends at Night End Time (if set) or 6:00 AM by default.": {
-    "other": "Dim mode ends at Night End Time (if set) or 6:00 AM by default."
+  "Dim mode ends at 6:00 AM.": {
+    "other": "Dim mode ends at 6:00 AM."
   },
   "Apply custom filters to the image during dim mode.": {
     "other": "Apply custom filters to the image during dim mode."
@@ -2203,5 +2149,80 @@
   },
   "Continue": {
     "other": "Continue"
+  },
+  "Quiet Hours": {
+    "other": "Quiet Hours"
+  },
+  "Quiet Hours Active": {
+    "other": "Quiet Hours Active"
+  },
+  "Quiet": {
+    "other": "Quiet"
+  },
+  "Quiet hours on": {
+    "other": "Quiet hours on"
+  },
+  "Persists until the next scheduled quiet hours change.": {
+    "other": "Persists until the next scheduled quiet hours change."
+  },
+  "Quiet hours change what the device shows during scheduled windows. Each window can turn the display off, dim the brightness, or switch to a dedicated app on the days you choose. Up to four windows are supported.": {
+    "other": "Quiet hours change what the device shows during scheduled windows. Each window can turn the display off, dim the brightness, or switch to a dedicated app on the days you choose. Up to four windows are supported."
+  },
+  "Window": {
+    "other": "Window"
+  },
+  "Enable Window": {
+    "other": "Enable Window"
+  },
+  "An end time earlier than the start time wraps past midnight.": {
+    "other": "An end time earlier than the start time wraps past midnight."
+  },
+  "Days": {
+    "other": "Days"
+  },
+  "Sun": {
+    "other": "Sun"
+  },
+  "Mon": {
+    "other": "Mon"
+  },
+  "Tue": {
+    "other": "Tue"
+  },
+  "Wed": {
+    "other": "Wed"
+  },
+  "Thu": {
+    "other": "Thu"
+  },
+  "Fri": {
+    "other": "Fri"
+  },
+  "Sat": {
+    "other": "Sat"
+  },
+  "Mode": {
+    "other": "Mode"
+  },
+  "Turn display off": {
+    "other": "Turn display off"
+  },
+  "Dim brightness": {
+    "other": "Dim brightness"
+  },
+  "Show a specific app": {
+    "other": "Show a specific app"
+  },
+  "App": {
+    "other": "App"
+  },
+  "To keep this app hidden outside the quiet window, disable it in the regular rotation on its app edit page.": {
+    "other": "To keep this app hidden outside the quiet window, disable it in the regular rotation on its app edit page."
+  },
+  "Dim mode on": {
+    "other": "Dim mode on"
+  },
+  "Persists until the next scheduled dim mode change.": {
+    "other": "Persists until the next scheduled dim mode change."
   }
 }

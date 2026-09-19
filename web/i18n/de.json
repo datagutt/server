@@ -281,12 +281,6 @@
   "Invalid custom brightness scale format. Use 6 comma-separated values (0-100).": {
     "other": "Ungültiges Format für die benutzerdefinierte Helligkeitsskala. Verwenden Sie 6 komma-getrennte Werte (0-100)."
   },
-  "Invalid night start time: {error}": {
-    "other": "Ungültige Nacht-Startzeit: {error}"
-  },
-  "Invalid night end time: {error}": {
-    "other": "Ungültige Nacht-Endzeit: {error}"
-  },
   "Invalid dim time: {error}": {
     "other": "Ungültige Dimm-Zeit: {error}"
   },
@@ -755,11 +749,8 @@
   "Scheduled Behavior": {
     "other": "Geplantes Verhalten"
   },
-  "Night mode switches the device into its nighttime state during the scheduled window. It can use a different brightness, color filter, and optional dedicated app.": {
-    "other": "Der Nachtmodus schaltet das Gerät während des geplanten Zeitfensters in den Nachtzustand. Er kann eine andere Helligkeit, Farbfilter und optionale dedizierte App verwenden."
-  },
-  "Dim mode lowers brightness before or after the full night mode window. Use it when you want the device to stay visible but less bright.": {
-    "other": "Dim-Modus senkt die Helligkeit vor oder nach dem vollen Nachtmodus-Fenster. Verwenden Sie ihn, wenn Sie möchten, dass das Gerät sichtbar, aber heller ist."
+  "Dim mode lowers brightness from its start time until 6:00 AM. Use it when you want the device to stay visible but less bright. Active quiet hours take precedence.": {
+    "other": "Der Dimm-Modus senkt die Helligkeit ab der Startzeit bis 6:00 Uhr. Verwenden Sie ihn, wenn das Gerät sichtbar, aber weniger hell sein soll. Aktive Ruhezeiten haben Vorrang."
   },
   "Enable Dim Mode": {
     "other": "Dim-Modus aktivieren"
@@ -865,12 +856,6 @@
   },
   "Device Info and Controls": {
     "other": "Geräteinformationen und -steuerung"
-  },
-  "Night mode on": {
-    "other": "Nachtmodus an"
-  },
-  "Persists until the next scheduled night mode change.": {
-    "other": "Wird bis zur nächsten geplanten Änderung des Nachtmodus beibehalten."
   },
   "Account": {
     "other": "Konto"
@@ -1526,42 +1511,6 @@
   "The interstitial app will display even if it is disabled in the regular rotation.": {
     "other": "Die Interstitial-App wird auch dann angezeigt, wenn sie in der regulären Rotation deaktiviert ist.Die Interstitial-App wird auch dann angezeigt, wenn sie in der regulären Rotation deaktiviert ist."
   },
-  "Night Mode Settings": {
-    "other": "Nachtmodus Einstellungen"
-  },
-  "Enable Night Mode": {
-    "other": "Nachtmodus aktivieren"
-  },
-  "Night Mode Configuration": {
-    "other": "Nachtmodus Konfiguration"
-  },
-  "Night Mode Active": {
-    "other": "Nachtmodus aktiv"
-  },
-  "Night Mode": {
-    "other": "Nachtmodus"
-  },
-  "Night Start Time": {
-    "other": "Nachtmodus Startzeit"
-  },
-  "Night End Time": {
-    "other": "Nachtmodus Endzeit"
-  },
-  "Night Brightness": {
-    "other": "Nacht-Helligkeit"
-  },
-  "Night Mode App": {
-    "other": "Nachtmodus-App:"
-  },
-  "To prevent the night mode app from displaying during the day, set it to disabled on the app edit page.": {
-    "other": "Um zu verhindern, dass die Nachtmodus-App tagsüber angezeigt wird, setzen Sie sie auf der App-Bearbeitungsseite auf deaktiviert."
-  },
-  "Night Color Filter": {
-    "other": "Nacht-Farbfilter"
-  },
-  "Apply custom filters to the image during night mode.": {
-    "other": "Wendet benutzerdefinierte Filter auf das Bild während des Nachtmodus an."
-  },
   "Dim Mode Settings": {
     "other": "Dimm-Modus-Einstellungen"
   },
@@ -1573,9 +1522,6 @@
   },
   "Dim Start Time": {
     "other": "Dimm-Startzeit"
-  },
-  "Leave empty to disable dim mode. Dim mode ends at Night End Time (if set) or 6:00 AM by default.": {
-    "other": "Leer lassen, um den Dimm-Modus zu deaktivieren. Der Dimm-Modus endet standardmäßig zur Nacht-Endzeit (falls festgelegt) oder um 6:00 Uhr."
   },
   "Dim Brightness": {
     "other": "Dimm-Helligkeit"
@@ -2120,8 +2066,8 @@
   "Enable dim Mode": {
     "other": "Dimm-Modus aktivieren"
   },
-  "Dim mode ends at Night End Time (if set) or 6:00 AM by default.": {
-    "other": "Der Dimm-Modus endet zur Nacht-Endzeit (falls gesetzt) oder standardmäßig um 6:00 Uhr."
+  "Dim mode ends at 6:00 AM.": {
+    "other": "Der Dimm-Modus endet um 6:00 Uhr."
   },
   "Apply custom filters to the image during dim mode.": {
     "other": "Benutzerdefinierte Filter auf das Bild im Dimm-Modus anwenden."
@@ -2200,5 +2146,80 @@
   },
   "Continue": {
     "other": "Weiter"
+  },
+  "Quiet Hours": {
+    "other": "Ruhezeiten"
+  },
+  "Quiet Hours Active": {
+    "other": "Ruhezeiten aktiv"
+  },
+  "Quiet": {
+    "other": "Ruhe"
+  },
+  "Quiet hours on": {
+    "other": "Ruhezeiten an"
+  },
+  "Persists until the next scheduled quiet hours change.": {
+    "other": "Wird bis zur nächsten geplanten Änderung der Ruhezeiten beibehalten."
+  },
+  "Quiet hours change what the device shows during scheduled windows. Each window can turn the display off, dim the brightness, or switch to a dedicated app on the days you choose. Up to four windows are supported.": {
+    "other": "Ruhezeiten ändern, was das Gerät in geplanten Zeitfenstern anzeigt. Jedes Fenster kann an den gewählten Tagen die Anzeige ausschalten, die Helligkeit reduzieren oder zu einer bestimmten App wechseln. Es werden bis zu vier Fenster unterstützt."
+  },
+  "Window": {
+    "other": "Fenster"
+  },
+  "Enable Window": {
+    "other": "Fenster aktivieren"
+  },
+  "An end time earlier than the start time wraps past midnight.": {
+    "other": "Eine Endzeit vor der Startzeit reicht über Mitternacht hinaus."
+  },
+  "Days": {
+    "other": "Tage"
+  },
+  "Sun": {
+    "other": "So"
+  },
+  "Mon": {
+    "other": "Mo"
+  },
+  "Tue": {
+    "other": "Di"
+  },
+  "Wed": {
+    "other": "Mi"
+  },
+  "Thu": {
+    "other": "Do"
+  },
+  "Fri": {
+    "other": "Fr"
+  },
+  "Sat": {
+    "other": "Sa"
+  },
+  "Mode": {
+    "other": "Modus"
+  },
+  "Turn display off": {
+    "other": "Anzeige ausschalten"
+  },
+  "Dim brightness": {
+    "other": "Helligkeit reduzieren"
+  },
+  "Show a specific app": {
+    "other": "Bestimmte App anzeigen"
+  },
+  "App": {
+    "other": "App"
+  },
+  "To keep this app hidden outside the quiet window, disable it in the regular rotation on its app edit page.": {
+    "other": "Um diese App außerhalb des Ruhezeitfensters auszublenden, deaktivieren Sie sie auf ihrer App-Bearbeitungsseite in der regulären Rotation."
+  },
+  "Dim mode on": {
+    "other": "Dimm-Modus an"
+  },
+  "Persists until the next scheduled dim mode change.": {
+    "other": "Wird bis zur nächsten geplanten Änderung des Dimm-Modus beibehalten."
   }
 }

@@ -17,7 +17,7 @@ However, there are some drawbacks, including the lack of a mobile app, slightly 
 *   Raspberry Pi (64x32), Raspberry Pi Wide (128x64) and Raspberry Pi Square (64x64) connected to matrix LED panels
 *   Pixoticker (limited memory, not recommended)
 
-Developing additional clients for Tronbyt Server is straightforward: pull WebP images from the `/next` endpoint and loop the animation for the duration specified in the `Tronbyt-Dwell-Secs` response header. Display brightness can optionally be set using the `Tronbyt-Brightness` header (0-100).
+Developing additional clients for Tronbyt Server is straightforward: pull WebP images from the `/next` endpoint and loop the animation for the duration specified in the `Tronbyt-Dwell-Secs` response header. Display brightness can optionally be set using the `Tronbyt-Brightness` header (0-100). When a quiet hours window with the `off` mode is active, the response also carries `Tronbyt-Quiet: 1` so the client can blank its display.
 
 **Installation Methods:**
 *   **Docker:** The recommended method uses Docker Compose with a configuration file. Video Tutorial : [Raspberry Pi Setup with Docker](https://youtu.be/UeHzD0uFxRo)

@@ -448,7 +448,7 @@ button.action.w3-button.w3-red {
   font-weight: normal;
 }
 
-.night-mode-badge,
+.quiet-hours-badge,
 .dim-mode-badge {
   font-size: 0.5em;
   vertical-align: middle;
@@ -459,7 +459,7 @@ button.action.w3-button.w3-red {
   font-weight: normal;
 }
 
-.night-mode-badge {
+.quiet-hours-badge {
   background-color: color-mix(in srgb, var(--surface-bg) 86%, #5a69c8 14%);
 }
 

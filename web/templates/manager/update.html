@@ -461,12 +461,9 @@
                                     id="qh_mode_{{ $w.Index }}"
                                     class="settings-input"
                                     onchange="updateQuietWindowMode('{{ $w.Index }}')">
-                                <option value="off" {{ if eq $w.Mode "off" }}selected{{ end }}>{{ t $.Localizer "Turn display off" }}
-                                </option>
-                                <option value="dim" {{ if eq $w.Mode "dim" }}selected{{ end }}>{{ t $.Localizer "Dim brightness" }}
-                                </option>
-                                <option value="app" {{ if eq $w.Mode "app" }}selected{{ end }}>{{ t $.Localizer "Show a specific app" }}
-                                </option>
+                                <option value="off" {{ if eq $w.Mode "off" }}selected{{ end }}>{{ t $.Localizer "Turn display off" }}</option>
+                                <option value="dim" {{ if eq $w.Mode "dim" }}selected{{ end }}>{{ t $.Localizer "Dim brightness" }}</option>
+                                <option value="app" {{ if eq $w.Mode "app" }}selected{{ end }}>{{ t $.Localizer "Show a specific app" }}</option>
                             </select>
                         </div>
                     </div>
@@ -479,8 +476,7 @@
                                     id="qh_brightness_{{ $w.Index }}"
                                     class="settings-input">
                                 {{ range seq 0 5 }}
-                                <option value="{{ . }}" {{ if eq $w.BrightnessUI . }}selected{{ end }}>{{ . }}
-                                </option>
+                                <option value="{{ . }}" {{ if eq $w.BrightnessUI . }}selected{{ end }}>{{ . }}</option>
                                 {{ end }}
                             </select>
                         </div>
@@ -495,8 +491,7 @@
                                     class="settings-input">
                                 <option value="None">{{ t $.Localizer "None" }}</option>
                                 {{ range $.Device.Apps }}
-                                <option value="{{ .Iname }}" {{ if eq $w.AppIname .Iname }}selected{{ end }}>{{ .Iname }} {{ .Name }}
-                                </option>
+                                <option value="{{ .Iname }}" {{ if eq $w.AppIname .Iname }}selected{{ end }}>{{ .Iname }} {{ .Name }}</option>
                                 {{ end }}
                             </select>
                             <p class="settings-help">
@@ -510,7 +505,7 @@
             <div class="settings-card-subsection">
                 <h3>{{ t .Localizer "Dim Mode" }}</h3>
                 <p class="settings-help">
-                    {{ t .Localizer "Dim mode lowers brightness before or after the full night mode window. Use it when you want the device to stay visible but less bright." }}
+                    {{ t .Localizer "Dim mode lowers brightness from its start time until 6:00 AM. Use it when you want the device to stay visible but less bright. Active quiet hours take precedence." }}
                 </p>
                 <div class="settings-field-list">
                     <div class="settings-field-row">
@@ -536,7 +531,7 @@
                                    id="dim_time"
                                    value="{{ if .Device.DimTime }}{{ .Device.DimTime }}{{ else }}18:00{{ end }}"
                                    class="settings-input">
-                            <p class="settings-help">{{ t .Localizer "Dim mode ends at Night End Time (if set) or 6:00 AM by default." }}</p>
+                            <p class="settings-help">{{ t .Localizer "Dim mode ends at 6:00 AM." }}</p>
                         </div>
                     </div>
                     <div class="settings-field-row">
