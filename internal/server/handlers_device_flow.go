@@ -204,8 +204,7 @@ func (s *Server) pollDeviceFlow(flow *deviceFlow, da *oauth2.DeviceAuthResponse)
 // can show. RFC 8628 defines the terminal error codes; providers that
 // return non-standard shapes fall through to a generic failure.
 func classifyDeviceFlowError(err error) (deviceFlowStatus, string) {
-	var retrieve *oauth2.RetrieveError
-	if errors.As(err, &retrieve) {
+	if retrieve, ok := errors.AsType[*oauth2.RetrieveError](err); ok {
 		switch retrieve.ErrorCode {
 		// "authorization_declined" is Microsoft's spelling of access_denied.
 		case "access_denied", "authorization_declined":

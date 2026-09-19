@@ -2,18 +2,18 @@
 {{ template "base" . }}
 {{ end }}
 {{ define "title" }}{{ t .Localizer "Connect" }}{{ end }}
-{{ define "header" }}<h2>{{ t .Localizer "Connect" }} {{ .DeviceFlow.ProviderDisplayName }}</h2>{{ end }}
+{{ define "header" }}
+<h2>{{ t .Localizer "Connect" }} {{ .DeviceFlow.ProviderDisplayName }}</h2>
+{{ end }}
 {{ define "content" }}
 <div class="w3-container" style="max-width: 640px;">
     <div id="deviceFlowPending">
-        <p>
-            {{ t .Localizer "Go to this address on your phone or computer and enter the code:" }}
-        </p>
+        <p>{{ t .Localizer "Go to this address on your phone or computer and enter the code:" }}</p>
         <p style="margin: 16px 0;">
             <a href="{{ if .DeviceFlow.VerificationURIComplete }}{{ .DeviceFlow.VerificationURIComplete }}{{ else }}{{ .DeviceFlow.VerificationURI }}{{ end }}"
                target="_blank"
                rel="noopener noreferrer"
-               style="font-size: 18px;">{{ .DeviceFlow.VerificationURI }} <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+               style="font-size: 18px">{{ .DeviceFlow.VerificationURI }} <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
         </p>
         <div style="font-family: monospace;
                     font-size: 40px;
@@ -34,7 +34,6 @@
             {{ t .Localizer "Waiting for you to approve…" }}
         </p>
     </div>
-
     <div id="deviceFlowDone" style="display: none;">
         <p id="deviceFlowDoneMessage" style="font-size: 18px;"></p>
         <p>
@@ -45,7 +44,6 @@
         </p>
     </div>
 </div>
-
 <script>
   (function () {
     const statusURL = "/connections/device/status/{{ .DeviceFlow.ID }}";
